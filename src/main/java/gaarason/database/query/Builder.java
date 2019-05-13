@@ -1,12 +1,14 @@
 package gaarason.database.query;
 
-import gaarason.database.contracts.GetJDBCResult;
+import gaarason.database.contracts.function.GenerateSqlPart;
+import gaarason.database.contracts.function.GetJDBCResult;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.*;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.SQLRuntimeException;
+import gaarason.database.utils.FormatUtil;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -24,13 +26,31 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
 
     protected T entity;
 
-    protected Model model;
+    protected Model<T> model;
 
-    public Builder(DataSource dataSourceModel, Model parentModel, T EntityModel) {
+    public Builder(DataSource dataSourceModel, Model<T> parentModel, T EntityModel) {
         dataSource = dataSourceModel;
         model = parentModel;
         entity = EntityModel;
         grammar = grammarFactory();
+    }
+
+    public Builder<T> getNewSelf() {
+        return model.newQuery();
+    }
+
+    /**
+     * 执行闭包生成sqlPart
+     * @param closure 闭包
+     * @return sqlPart eg:(`id`="3" and `age` bteween "12" and "19")
+     */
+    protected String generateSqlPart(GenerateSqlPart<T> closure) {
+        Builder<T>   subBuilder    = closure.generate(getNewSelf());
+        List<String> parameterList = subBuilder.grammar.getParameterList();
+        for (String parameter : parameterList) {
+            grammar.pushWhereParameter(parameter);
+        }
+        return FormatUtil.bracket(subBuilder.grammar.generateSql(SqlType.SUBQUERY));
     }
 
     abstract Grammar grammarFactory();

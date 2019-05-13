@@ -27,6 +27,7 @@ public class Model<T> {
 
     public Builder<T> newQuery() {
         T entity = newEntity();
+        // todo 按连接类型,等等信息选择 builder
         return new MySqlBuilder<>(dataSource, this, entity);
     }
 

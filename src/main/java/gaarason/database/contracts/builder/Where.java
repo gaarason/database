@@ -1,6 +1,7 @@
 package gaarason.database.contracts.builder;
 
 import gaarason.database.contracts.Closure;
+import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.query.Builder;
 
 import java.util.List;
@@ -101,11 +102,17 @@ public interface Where<T> {
     Builder<T> whereColumn(String column1, String column2);
 
     /**
+     * 且
      * @param Closure
      * @return
      */
-    Builder<T> andWhere(Closure Closure);
+    Builder<T> andWhere(GenerateSqlPart<T> Closure);
 
-    Builder<T> orWhere(Closure Closure);
+    /**
+     * 或
+     * @param Closure
+     * @return
+     */
+    Builder<T> orWhere(GenerateSqlPart<T> Closure);
 
 }

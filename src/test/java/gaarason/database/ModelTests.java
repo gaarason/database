@@ -6,7 +6,6 @@ import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.models.RelationshipStudentTeacherModel;
 import gaarason.database.models.StudentModel;
 import gaarason.database.models.TeacherModel;
-import gaarason.database.utils.EntityUtil;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Rule;
@@ -17,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-
-import static org.assertj.core.internal.bytebuddy.implementation.FixedValue.value;
 
 @FixMethodOrder(MethodSorters.JVM)
 public class ModelTests extends DatabaseApplicationTests {
@@ -364,6 +361,43 @@ public class ModelTests extends DatabaseApplicationTests {
 
         List<StudentModel.Entity> entityList2 = studentModel.newQuery().whereNull("age").get();
         Assert.assertEquals(entityList2.size(), 0);
+    }
+
+    @Test
+    public void 条件_orWhere() {
+        List<StudentModel.Entity> entityList1 = studentModel.newQuery().where("id","3").orWhere(
+                (builder) -> builder.whereRaw("id=4")
+        ).get();
+        Assert.assertEquals(entityList1.size(), 2);
+
+        List<StudentModel.Entity> entityList2 = studentModel.newQuery().where("id","3").orWhere(
+                (builder) -> builder.whereBetween("id", "4", "10").where("age",">","11")
+        ).get();
+        Assert.assertEquals(entityList2.size(), 6);
+    }
+
+    @Test
+    public void 条件_andWhere() {
+        List<StudentModel.Entity> entityList1 = studentModel.newQuery().where("id","3").andWhere(
+                (builder) -> builder.whereRaw("id=4")
+        ).get();
+        Assert.assertEquals(entityList1.size(), 0);
+
+        List<StudentModel.Entity> entityList2 = studentModel.newQuery().where("id","7").andWhere(
+                (builder) -> builder.whereBetween("id", "4", "10").where("age",">","11")
+        ).get();
+        Assert.assertEquals(entityList2.size(), 1);
+        Assert.assertEquals(entityList2.get(0).getId().intValue(), 7);
+    }
+
+    @Test
+    public void 条件_andWhere与orWhere无线嵌套() {
+        List<StudentModel.Entity> entityList1 = studentModel.newQuery().where("id","3").orWhere(
+                (builder) -> builder.where("age",">","11").where("id","7").andWhere(
+                        (builder2) -> builder2.whereBetween("id", "4", "10").where("age",">","11")
+                )
+        ).from("student").select("id", "name").get();
+        Assert.assertEquals(entityList1.size(), 2);
     }
 
     @Test

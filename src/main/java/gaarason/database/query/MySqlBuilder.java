@@ -2,6 +2,7 @@ package gaarason.database.query;
 
 import gaarason.database.contracts.Closure;
 import gaarason.database.contracts.Grammar;
+import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.OrderBy;
 import gaarason.database.eloquent.SqlType;
@@ -23,7 +24,7 @@ public class MySqlBuilder<T> extends Builder<T> {
      */
     private List<String> columnList = new ArrayList<>();
 
-    public MySqlBuilder(DataSource dataSourceModel, Model model, T entity) {
+    public MySqlBuilder(DataSource dataSourceModel, Model<T> model, T entity) {
         super(dataSourceModel, model, entity);
     }
 
@@ -111,13 +112,17 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> andWhere(Closure Closure) {
-        return null;
+    public Builder<T> andWhere(GenerateSqlPart<T> Closure) {
+        String sqlPart = generateSqlPart(Closure);
+        grammar.pushWhere(sqlPart, "and");
+        return this;
     }
 
     @Override
-    public Builder<T> orWhere(Closure Closure) {
-        return null;
+    public Builder<T> orWhere(GenerateSqlPart<T> Closure) {
+        String sqlPart = generateSqlPart(Closure);
+        grammar.pushWhere(sqlPart, "or");
+        return this;
     }
 
     @Override

@@ -109,15 +109,20 @@ public class MySqlGrammar implements Grammar {
     }
 
     private String dealFromSelect() {
-        return null == from ? " from " + table : " from " + from;
+        return null == from ? " from " + dealTable() : " from " + from;
     }
 
     private String dealFrom() {
-        return null == from ? table : from;
+        return null == from ? dealTable() : from;
     }
 
-    private String dealWhere() {
-        return null == where ? "" : " where " + where;
+    private String dealTable(){
+        return FormatUtil.backQuote(table);
+    }
+
+    private String dealWhere(SqlType sqlType) {
+        String whereKeyword = sqlType == SqlType.SUBQUERY ? "" : " where ";
+        return null == where ? "" : whereKeyword + where;
     }
 
     private String dealData() {
@@ -175,11 +180,14 @@ public class MySqlGrammar implements Grammar {
             case REPLACE:
                 sql = "replace into " + dealFrom();
                 break;
+            case SUBQUERY:
+                sql = "";
+                break;
             default:
                 throw new InvalidSQLTypeException();
         }
 
-        sql += dealJoin() + dealWhere() + dealGroup() + dealHaving() + dealOrderBy() + dealLimit() + dealLock();
+        sql += dealJoin() + dealWhere(sqlType) + dealGroup() + dealHaving() + dealOrderBy() + dealLimit() + dealLock();
 
         return sql;
     }
