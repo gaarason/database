@@ -40,12 +40,44 @@ public interface Where<T> {
     Builder<T> whereIn(String column, List<String> valueList);
 
     /**
+     * 列值在范围内(子查询)
+     * @param column  列名
+     * @param sql 完整sql eg:select id from student where age>10
+     * @return 查询构建器
+     */
+    Builder<T> whereInRaw(String column, String sql);
+
+    /**
+     * 列值在范围内(子查询)
+     * @param column  列名
+     * @param closure 闭包
+     * @return 查询构建器
+     */
+    Builder<T> whereIn(String column, GenerateSqlPart<T> closure);
+
+    /**
      * 列值不在范围内
      * @param column    列名
      * @param valueList 值所在的list
      * @return 查询构建器
      */
     Builder<T> whereNotIn(String column, List<String> valueList);
+
+    /**
+     * 列值不在范围内(子查询)
+     * @param column  列名
+     * @param sql 完整sql eg:select id from student where age>10
+     * @return 查询构建器
+     */
+    Builder<T> whereNotInRaw(String column, String sql);
+
+    /**
+     * 列值不在范围内(子查询)
+     * @param column  列名
+     * @param closure 闭包
+     * @return 查询构建器
+     */
+    Builder<T> whereNotIn(String column, GenerateSqlPart<T> closure);
 
     /**
      * 列值在2值之间
@@ -126,16 +158,16 @@ public interface Where<T> {
 
     /**
      * 且
-     * @param Closure 闭包
+     * @param closure 闭包
      * @return 查询构建器
      */
-    Builder<T> andWhere(GenerateSqlPart<T> Closure);
+    Builder<T> andWhere(GenerateSqlPart<T> closure);
 
     /**
      * 或
-     * @param Closure 闭包
+     * @param closure 闭包
      * @return 查询构建器
      */
-    Builder<T> orWhere(GenerateSqlPart<T> Closure);
+    Builder<T> orWhere(GenerateSqlPart<T> closure);
 
 }

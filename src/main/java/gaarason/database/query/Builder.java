@@ -9,6 +9,7 @@ import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.utils.FormatUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -17,8 +18,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
+@Slf4j
 abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
-        OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T> {
+    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T> {
 
     /**
      * 数据实体
@@ -74,7 +76,6 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     }
 
     /**
-     *
      * @return 数据库语句组装对象
      */
     abstract Grammar grammarFactory();
@@ -104,7 +105,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     int updateSql(SqlType sqlType) {
         if (sqlType != SqlType.INSERT && !grammar.hasWhere())
             throw new ConfirmOperationException("You made a risky operation without where conditions, use where(1) " +
-                    "for sure");
+                "for sure");
         try {
             Connection connection    = dataSource.getConnection();
             int        affectedLines = executeSql(connection, sqlType).executeUpdate();
@@ -118,19 +119,20 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 执行sql
      * @param connection 数据库连接
-     * @param sqlType sql类型
+     * @param sqlType    sql类型
      * @return 预执行对象
      */
     private PreparedStatement executeSql(Connection connection, SqlType sqlType) {
         try {
-            String       sql                = grammar.generateSql(sqlType);
-            List<String> whereParameterList = grammar.getParameterList();
-            System.out.println("sql : " + sql);
-            System.out.println("whereParameterList : " + whereParameterList);
+            String       sql           = grammar.generateSql(sqlType);
+            List<String> parameterList = grammar.getParameterList();
+
+            log.debug("sql : {}", sql);
+            log.debug("parameterList : {}", parameterList);
 
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int               i                 = 1;
-            for (String parameter : whereParameterList) {
+            for (String parameter : parameterList) {
                 preparedStatement.setString(i++, parameter);
             }
             return preparedStatement;
@@ -141,7 +143,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
 
     /**
      * 执行闭包生成sql
-     * @param closure 闭包
+     * @param closure  闭包
      * @param wholeSql 是否生成完整sql
      * @return sql
      */

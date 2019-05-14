@@ -335,7 +335,7 @@ public class ModelTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 条件_in() {
+    public void 条件_whereIn() {
         List<String> idList = new ArrayList<>();
         idList.add("4");
         idList.add("5");
@@ -355,7 +355,19 @@ public class ModelTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 条件_null() {
+    public void 条件_whereIn_closure() {
+        List<StudentModel.Entity> entityList1 = studentModel.newQuery().whereIn("id",
+            builder -> builder.select("id").where("age", ">=", "11")
+        ).andWhere(
+            builder -> builder.whereNotIn("sex",
+                builder1 -> builder1.select("sex").where("sex", "1")
+            )
+        ).get();
+        Assert.assertEquals(entityList1.size(), 3);
+    }
+
+    @Test
+    public void 条件_whereNull() {
         List<StudentModel.Entity> entityList1 = studentModel.newQuery().whereNotNull("id").get();
         Assert.assertEquals(entityList1.size(), 10);
 

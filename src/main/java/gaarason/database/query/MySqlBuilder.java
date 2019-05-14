@@ -1,6 +1,5 @@
 package gaarason.database.query;
 
-import gaarason.database.contracts.Closure;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.Model;
@@ -58,9 +57,33 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
+    public Builder<T> whereInRaw(String column, String sql) {
+        String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(sql);
+        return whereRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> whereIn(String column, GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        return whereInRaw(column, sqlPart);
+    }
+
+    @Override
     public Builder<T> whereNotIn(String column, List<String> valueList) {
         String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(formatValue(valueList));
         return whereRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> whereNotInRaw(String column, String sql) {
+        String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(sql);
+        return whereRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> whereNotIn(String column, GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        return whereNotInRaw(column, sqlPart);
     }
 
     @Override
@@ -72,7 +95,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public Builder<T> whereNotBetween(String column, String min, String max) {
         String sqlPart =
-                FormatUtil.column(column) + "not between" + formatValue(min) + "and" + formatValue(max);
+            FormatUtil.column(column) + "not between" + formatValue(min) + "and" + formatValue(max);
         return whereRaw(sqlPart);
     }
 
