@@ -9,7 +9,7 @@ public interface Data<T> {
     /**
      * 数据更新
      * @param sqlPart sql片段 eg: age=15,name="dd"
-     * @return
+     * @return 查询构建器
      */
     Builder<T> data(String sqlPart);
 
@@ -17,14 +17,14 @@ public interface Data<T> {
      * 数据更新
      * @param column 列名
      * @param value  值
-     * @return
+     * @return 查询构建器
      */
     Builder<T> data(String column, String value);
 
     /**
      * 数据更新
      * @param map Map<String column, String value>
-     * @return
+     * @return 查询构建器
      */
     Builder<T> data(Map<String, String> map);
 
@@ -32,7 +32,7 @@ public interface Data<T> {
      * 字段自增
      * @param column 列名
      * @param steps  步长
-     * @return
+     * @return 查询构建器
      */
     Builder<T> dataIncrement(String column, int steps);
 
@@ -40,7 +40,7 @@ public interface Data<T> {
      * 字段自减
      * @param column 列名
      * @param steps  步长
-     * @return
+     * @return 查询构建器
      */
     Builder<T> dataDecrement(String column, int steps);
 

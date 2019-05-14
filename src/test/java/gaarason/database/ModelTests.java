@@ -402,8 +402,32 @@ public class ModelTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_exists() {
-        // todo
+        // EXISTS用于检查子查询是否至少会返回一行数据，该子查询实际上并不返回任何数据，而是返回值True或False
+        // EXISTS 指定一个子查询，检测 行 的存在。
 
+        List<StudentModel.Entity> entityList = studentModel.newQuery()
+            .select("id", "name", "age")
+            .whereBetween("id", "1", "2")
+            .whereExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
+            )
+            .whereExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "1", "4")
+            )
+            .get();
+        Assert.assertEquals(entityList.size(), 2);
+
+        List<StudentModel.Entity> entityList2 = studentModel.newQuery()
+            .select("id", "name", "age")
+            .whereBetween("id", "1", "2")
+            .whereExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
+            )
+            .whereNotExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "4")
+            )
+            .get();
+        Assert.assertEquals(entityList2.size(), 0);
     }
 
     @Test

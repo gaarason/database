@@ -89,15 +89,27 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> whereExists(String sqlWhole) {
-        String sqlPart = "exists " + FormatUtil.bracket(sqlWhole);
+    public Builder<T> whereExistsRaw(String sql) {
+        String sqlPart = "exists " + FormatUtil.bracket(sql);
         return whereRaw(sqlPart);
     }
 
     @Override
-    public Builder<T> whereNotExists(String sqlWhole) {
-        String sqlPart = "not exists " + FormatUtil.bracket(sqlWhole);
+    public Builder<T> whereExists(GenerateSqlPart<T> Closure) {
+        String sql = generateSql(Closure);
+        return whereExistsRaw(sql);
+    }
+
+    @Override
+    public Builder<T> whereNotExistsRaw(String sql) {
+        String sqlPart = "not exists " + FormatUtil.bracket(sql);
         return whereRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> whereNotExists(GenerateSqlPart<T> Closure) {
+        String sql = generateSql(Closure);
+        return whereNotExistsRaw(sql);
     }
 
     @Override
@@ -251,9 +263,9 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public int insert(List<T> entityList) {
         // 获取entity所有有效字段
-        List<String> columnNameList = EntityUtil.columnNameList(entityList.get(0));
-        List<List<String>> valueListList = new ArrayList<>();
-        for (T entity : entityList){
+        List<String>       columnNameList = EntityUtil.columnNameList(entityList.get(0));
+        List<List<String>> valueListList  = new ArrayList<>();
+        for (T entity : entityList) {
             // 获取entity所有有效字段的值
             List<String> valueList = EntityUtil.valueList(entity);
             valueListList.add(valueList);
@@ -327,7 +339,7 @@ public class MySqlBuilder<T> extends Builder<T> {
 
     @Override
     public Builder<T> valueList(List<List<String>> valueList) {
-        for(List<String> value : valueList){
+        for (List<String> value : valueList) {
             value(value);
         }
         return this;

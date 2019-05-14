@@ -20,13 +20,25 @@ import java.util.List;
 abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
         OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T> {
 
-    protected DataSource dataSource;
-
-    protected Grammar grammar;
-
+    /**
+     * 数据实体
+     */
     protected T entity;
 
-    protected Model<T> model;
+    /**
+     * 数据库连接
+     */
+    private DataSource dataSource;
+
+    /**
+     * sql生成器
+     */
+    Grammar grammar;
+
+    /**
+     * 数据模型
+     */
+    Model<T> model;
 
     public Builder(DataSource dataSourceModel, Model<T> parentModel, T EntityModel) {
         dataSource = dataSourceModel;
@@ -35,7 +47,11 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         grammar = grammarFactory();
     }
 
-    public Builder<T> getNewSelf() {
+    /**
+     * 得到一个全新的查询构造器
+     * @return 查询构造器
+     */
+    private Builder<T> getNewSelf() {
         return model.newQuery();
     }
 
@@ -44,15 +60,23 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @param closure 闭包
      * @return sqlPart eg:(`id`="3" and `age` bteween "12" and "19")
      */
-    protected String generateSqlPart(GenerateSqlPart<T> closure) {
-        Builder<T>   subBuilder    = closure.generate(getNewSelf());
-        List<String> parameterList = subBuilder.grammar.getParameterList();
-        for (String parameter : parameterList) {
-            grammar.pushWhereParameter(parameter);
-        }
-        return FormatUtil.bracket(subBuilder.grammar.generateSql(SqlType.SUBQUERY));
+    String generateSqlPart(GenerateSqlPart<T> closure) {
+        return generateSql(closure, false);
     }
 
+    /**
+     * 执行闭包生成完整sql
+     * @param closure 闭包
+     * @return sqlPart eg:(select * from `student` where `id`="3" and `age` bteween "12" and "19")
+     */
+    String generateSql(GenerateSqlPart<T> closure) {
+        return generateSql(closure, true);
+    }
+
+    /**
+     *
+     * @return 数据库语句组装对象
+     */
     abstract Grammar grammarFactory();
 
     /**
@@ -75,7 +99,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
 
     /**
      * 执行sql, 返回收影响的行数
-     * @return 返回的对象
+     * @return 影响的行数
      */
     int updateSql(SqlType sqlType) {
         if (sqlType != SqlType.INSERT && !grammar.hasWhere())
@@ -91,6 +115,12 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         }
     }
 
+    /**
+     * 执行sql
+     * @param connection 数据库连接
+     * @param sqlType sql类型
+     * @return 预执行对象
+     */
     private PreparedStatement executeSql(Connection connection, SqlType sqlType) {
         try {
             String       sql                = grammar.generateSql(sqlType);
@@ -107,6 +137,22 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * 执行闭包生成sql
+     * @param closure 闭包
+     * @param wholeSql 是否生成完整sql
+     * @return sql
+     */
+    private String generateSql(GenerateSqlPart<T> closure, boolean wholeSql) {
+        Builder<T>   subBuilder    = closure.generate(getNewSelf());
+        List<String> parameterList = subBuilder.grammar.getParameterList();
+        for (String parameter : parameterList) {
+            grammar.pushWhereParameter(parameter);
+        }
+        SqlType sqlType = wholeSql ? SqlType.SELECT : SqlType.SUBQUERY;
+        return FormatUtil.bracket(subBuilder.grammar.generateSql(sqlType));
     }
 
 }
