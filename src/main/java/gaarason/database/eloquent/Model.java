@@ -1,17 +1,20 @@
 package gaarason.database.eloquent;
 
+import gaarason.database.connections.ProxyConnection;
+import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.exception.InvalidEntityException;
 import gaarason.database.query.Builder;
 import gaarason.database.query.MySqlBuilder;
 
-import javax.annotation.Resource;
-import javax.sql.DataSource;
 import java.lang.reflect.ParameterizedType;
 
-public class Model<T> {
+abstract public class Model<T> {
 
-    @Resource
-    DataSource dataSource;
+    /**
+     *
+     * @return dataSource代理
+     */
+    abstract public ProxyDataSource getProxyDataSource();
 
     public T newEntity() {
         try {
@@ -28,7 +31,8 @@ public class Model<T> {
     public Builder<T> newQuery() {
         T entity = newEntity();
         // todo 按连接类型,等等信息选择 builder
-        return new MySqlBuilder<>(dataSource, this, entity);
+        ProxyDataSource proxyDataSource = getProxyDataSource();
+        return new MySqlBuilder<>(proxyDataSource, this, entity);
     }
 
     public T find() {

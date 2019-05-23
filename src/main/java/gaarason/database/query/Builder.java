@@ -1,5 +1,7 @@
 package gaarason.database.query;
 
+import gaarason.database.connections.ProxyConnection;
+import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.contracts.function.GetJDBCResult;
 import gaarason.database.contracts.Grammar;
@@ -16,11 +18,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
-    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T> {
+    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T> {
 
     /**
      * 数据实体
@@ -30,7 +34,14 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 数据库连接
      */
-    private DataSource dataSource;
+    private ProxyDataSource dataSource;
+
+    /**
+     * 避免线程锁的connection缓存
+     */
+    private Map<String, Connection> localThreadConnectionList = new HashMap<>();
+
+//    private static final ThreadLocal localConnection;
 
     /**
      * sql生成器
@@ -42,10 +53,23 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      */
     Model<T> model;
 
-    public Builder(DataSource dataSourceModel, Model<T> parentModel, T EntityModel) {
-        dataSource = dataSourceModel;
-        model = parentModel;
-        entity = EntityModel;
+
+    private void setLocalThreadConnection(Connection connection){
+        String name = Thread.currentThread().getName();
+        localThreadConnectionList.put(name , connection);
+    }
+
+    private Connection getLocalThreadConnection(){
+        String name = Thread.currentThread().getName();
+        return localThreadConnectionList.get(name);
+    }
+
+
+    public Builder(ProxyDataSource dataSource, Model<T> model, T entity) {
+        this.dataSource = dataSource;
+//        this.connection = connection;
+        this.model = model;
+        this.entity = entity;
         grammar = grammarFactory();
     }
 
@@ -60,7 +84,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 执行闭包生成sqlPart
      * @param closure 闭包
-     * @return sqlPart eg:(`id`="3" and `age` bteween "12" and "19")
+     * @return sqlPart eg:(`id`="3" and `age` between "12" and "19")
      */
     String generateSqlPart(GenerateSqlPart<T> closure) {
         return generateSql(closure, false);
@@ -69,7 +93,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 执行闭包生成完整sql
      * @param closure 闭包
-     * @return sqlPart eg:(select * from `student` where `id`="3" and `age` bteween "12" and "19")
+     * @return sqlPart eg:(select * from `student` where `id`="3" and `age` between "12" and "19")
      */
     String generateSql(GenerateSqlPart<T> closure) {
         return generateSql(closure, true);
@@ -88,13 +112,75 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      */
     <V> V querySql(GetJDBCResult<V> callback) {
         try {
-            Connection connection = dataSource.getConnection();
+            Connection connection = theConnection(false);
             ResultSet  resultSet  = executeSql(connection, SqlType.SELECT).executeQuery();
             V          v          = callback.get(resultSet);
-            connection.close();
+            if(!inTransaction()){
+                connection.close();
+            }
             return v;
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean begin() {
+        try {
+            dataSource.setInTransaction(true);
+            Connection connection    = dataSource.getConnection();
+            connection.setAutoCommit(false);
+            setLocalThreadConnection(connection);
+            if(!inTransaction()){
+                connection.close();
+            }
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean commit() {
+        try {
+            getLocalThreadConnection().commit();
+            getLocalThreadConnection().close();
+            dataSource.setInTransaction(false);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean rollBack() {
+        try {
+            getLocalThreadConnection().rollback();
+            getLocalThreadConnection().close();
+            dataSource.setInTransaction(false);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean inTransaction() {
+        return dataSource.isInTransaction();
+    }
+
+    @Override
+    public boolean transaction(Runnable runnable) {
+        try {
+            begin();
+            runnable.run();
+            return commit();
+        }catch (Exception e){
+            rollBack();
+            return false;
         }
     }
 
@@ -107,12 +193,23 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
             throw new ConfirmOperationException("You made a risky operation without where conditions, use where(1) " +
                 "for sure");
         try {
-            Connection connection    = dataSource.getConnection();
+            Connection connection    = theConnection(true);
             int        affectedLines = executeSql(connection, sqlType).executeUpdate();
-            connection.close();
+            if(!inTransaction()){
+                connection.close();
+            }
             return affectedLines;
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
+        }
+    }
+
+    private Connection theConnection(boolean isWrite) throws SQLException {
+        if(inTransaction()){
+            return getLocalThreadConnection();
+        }else{
+            dataSource.setWrite(isWrite);
+            return dataSource.getConnection();
         }
     }
 

@@ -1,15 +1,17 @@
 package gaarason.database.models;
 
-import gaarason.database.eloquent.*;
+import gaarason.database.eloquent.Column;
+import gaarason.database.eloquent.Primary;
+import gaarason.database.eloquent.Table;
 import gaarason.database.models.base.MasterSlaveModel;
+import gaarason.database.models.base.SingleModel;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
-import java.sql.Timestamp;
 import java.util.Date;
 
 @Component
-public class StudentModel extends MasterSlaveModel<StudentModel.Entity> {
+public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
 
     @Data
     @Table(name = "student")

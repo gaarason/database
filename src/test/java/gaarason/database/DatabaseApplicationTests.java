@@ -1,64 +1,71 @@
 package gaarason.database;
 
 import com.alibaba.druid.pool.DruidDataSource;
-import gaarason.database.models.RelationshipStudentTeacherModel;
-import gaarason.database.models.SsoTenantSaltModel;
-import gaarason.database.models.StudentModel;
-import gaarason.database.models.TeacherModel;
-import gaarason.database.pojo.po.SsoTenantSalt;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.io.*;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
 @FixMethodOrder(MethodSorters.JVM)
+@Slf4j
 public class DatabaseApplicationTests {
 
     @Resource
     DataSource dataSource;
 
-    @Autowired
-    SsoTenantSaltModel              ssoTenantSaltModel;
+    @Resource
+    List<DataSource> dataSourceSlaveListSingle;
+    @Resource
+    List<DataSource> dataSourceMasterListSingle;
 
-    private String table = "sso_tenant_salt";
+    private static String initSql = "";
 
     /**
      * 初始化数据库
      */
     @BeforeClass
     public static void beforeClass() {
+        log.debug("spring 初始化完成");
+        String sqlFilename = Thread.currentThread().getStackTrace()[1].getClass().getResource("/").toString().replace(
+            "file:", "") + "../../src" +
+            "/test/java/gaarason/database/init/testInit.sql";
+        initSql  = readToString(sqlFilename);
         System.out.println("in before class");
     }
 
-    //execute for each test, before executing test
     @Before
     public void before() throws SQLException {
-        System.out.println("in before");
-        String sqlFilename = this.getClass().getResource("/").toString().replace("file:", "") + "../../src" +
-                "/test/java/gaarason/database/init/testInit.sql";
-        String     sqlString  = readToString(sqlFilename);
-        String[]   split      = sqlString.split(";\n");
-        Connection connection = dataSource.getConnection();
-        for (String sql : split) {
-//            System.out.println("初始化 sql : " + sql);
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            int               i                 = preparedStatement.executeUpdate();
+        log.debug("in before");
+        log.debug("数据库重新初始化开始");
+
+        initDataSourceList(dataSourceSlaveListSingle);
+        initDataSourceList(dataSourceMasterListSingle);
+
+        log.debug("数据库重新初始化完成");
+    }
+
+    private void initDataSourceList(List<DataSource> dataSourceList) throws SQLException {
+        String[]   split      = initSql.split(";\n");
+        for(DataSource dataSource : dataSourceList){
+            Connection connection = dataSource.getConnection();
+            for (String sql : split) {
+                PreparedStatement preparedStatement = connection.prepareStatement(sql);
+                int               i                 = preparedStatement.executeUpdate();
+            }
+            connection.close();
         }
-        connection.close();
-        System.out.println("数据库重新初始化");
     }
 
     private static String readToString(String fileName) {
@@ -82,14 +89,14 @@ public class DatabaseApplicationTests {
         } catch (UnsupportedEncodingException e) {
             System.err.println("The OS does not support " + encoding);
             e.printStackTrace();
-            return null;
         }
+        return "";
     }
 
     //execute for each test, after executing test
     @After
     public void after() {
-        System.out.println("in after");
+        log.debug("in after");
     }
 
     /**
@@ -97,7 +104,7 @@ public class DatabaseApplicationTests {
      */
     @AfterClass
     public static void afterClass() {
-        System.out.println("in after class");
+        log.debug("in after class");
     }
 
     @Test
@@ -141,35 +148,35 @@ public class DatabaseApplicationTests {
         }
     }
 
-    @Test
-    public void simpleSelect() throws SQLException {
-        String            sql               = "select * from " + table + " where id=?";
-        PreparedStatement preparedStatement = dataSource.getConnection().prepareStatement(sql);
+//    @Test
+//    public void simpleSelect() throws SQLException {
+//        String            sql               = "select * from " + table + " where id=?";
+//        PreparedStatement preparedStatement = dataSource.getConnection().prepareStatement(sql);
+//
+//        preparedStatement.setString(1, "qrwqrwr");
+//
+//        ResultSet resultSet = preparedStatement.executeQuery();
+//
+//        while (resultSet.next()) {
+//            System.out.println(resultSet.getString(1));
+//            System.out.println(resultSet.getString(2));
+//            System.out.println(resultSet.getString(3));
+//            System.out.println(resultSet.getString(4));
+//            System.out.println(resultSet.getString(5));
+//            System.out.println(resultSet.getString(6));
+//        }
+//        System.out.println(resultSet);
+//    }
 
-        preparedStatement.setString(1, "qrwqrwr");
-
-        ResultSet resultSet = preparedStatement.executeQuery();
-
-        while (resultSet.next()) {
-            System.out.println(resultSet.getString(1));
-            System.out.println(resultSet.getString(2));
-            System.out.println(resultSet.getString(3));
-            System.out.println(resultSet.getString(4));
-            System.out.println(resultSet.getString(5));
-            System.out.println(resultSet.getString(6));
-        }
-        System.out.println(resultSet);
-    }
-
-    @Test
-    public void select() throws SQLException {
-
-//        DataSource dataSource = ssoTenantSaltModel.getDataSource();
-        SsoTenantSalt ssoTenantSalt = ssoTenantSaltModel.newQuery().from("sso_tenant_salt")
-                .where("id", "qrwqrwr").first();
-
-        System.out.println(ssoTenantSalt);
-    }
+//    @Test
+//    public void select() throws SQLException {
+//
+////        DataSource dataSource = ssoTenantSaltModel.getDataSource();
+//        SsoTenantSalt ssoTenantSalt = ssoTenantSaltModel.newQuery().from("sso_tenant_salt")
+//                .where("id", "qrwqrwr").first();
+//
+//        System.out.println(ssoTenantSalt);
+//    }
 
 
 //    @Test

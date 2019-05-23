@@ -3,6 +3,7 @@ package gaarason.database.models;
 import gaarason.database.eloquent.Column;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.Primary;
+import gaarason.database.models.base.MasterSlaveModel;
 import lombok.Data;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.sql.Timestamp;
 
 @Component
-public class TeacherModel extends Model<TeacherModel.Entity> {
+public class TeacherModel extends MasterSlaveModel<TeacherModel.Entity> {
 
     @Data
     public static class Entity {

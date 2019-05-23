@@ -1,5 +1,6 @@
 package gaarason.database.query;
 
+import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.Model;
@@ -11,7 +12,6 @@ import gaarason.database.utils.EntityUtil;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
 
-import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +23,8 @@ public class MySqlBuilder<T> extends Builder<T> {
      */
     private List<String> columnList = new ArrayList<>();
 
-    public MySqlBuilder(DataSource dataSourceModel, Model<T> model, T entity) {
-        super(dataSourceModel, model, entity);
+    public MySqlBuilder(ProxyDataSource dataSourceModel, Model<T> model, T entity) {
+        super(dataSourceModel,  model, entity);
     }
 
     @Override
