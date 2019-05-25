@@ -108,11 +108,25 @@ public class EntityUtil {
      * @throws EntityNotFoundException
      */
     public static <T> T setValueToEntity(T entity, ResultSet resultSet, List<String> columnList) throws SQLException,
-            EntityNotFoundException {
+        EntityNotFoundException {
         Field[] fields = entity.getClass().getDeclaredFields();
         if (!resultSet.next())
             throw new EntityNotFoundException();
         fieldAssignment(fields, columnList, resultSet, entity);
+        return entity;
+    }
+
+    /**
+     * 将map结果集赋值到entity
+     * @param entity     数据表实体对象
+     * @param resultMap  map结果集
+     * @param <T>        数据表实体类
+     * @return entity
+     * @throws EntityNotFoundException
+     */
+    public static <T> T setValueToEntity(T entity, Map<String, Object> resultMap) throws EntityNotFoundException {
+        Field[] fields = entity.getClass().getDeclaredFields();
+        fieldAssignment(fields, resultMap, entity);
         return entity;
     }
 
@@ -146,7 +160,7 @@ public class EntityUtil {
      * @throws SQLException
      */
     private static void fieldAssignment(Field[] fields, List<String> columnList, ResultSet resultSet, Object entity)
-            throws SQLException {
+        throws SQLException {
         for (Field field : fields) {
             // 非*, 且没在select中的字段则忽略,
             if (!columnList.contains(columnName(field)) && columnList.size() != 0) {
@@ -155,6 +169,31 @@ public class EntityUtil {
             field.setAccessible(true); // 设置些属性是可以访问的
             try {
                 field.set(entity, columnFill(field, resultSet));
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException();
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException();
+            }
+        }
+    }
+
+    /**
+     * 将数据库查询结果赋值给entity的field
+     * @param fields     属性
+     * @param resultMap  map结果集
+     * @param entity     数据表实体对象
+     */
+    private static void fieldAssignment(Field[] fields, Map<String, Object> resultMap,
+                                        Object entity) {
+        final Set<String> columnSet = resultMap.keySet();
+        for (Field field : fields) {
+            // 非*, 且没在select中的字段则忽略,
+            if (!columnSet.contains(columnName(field)) && columnSet.size() != 0) {
+                continue;
+            }
+            field.setAccessible(true); // 设置些属性是可以访问的
+            try {
+                field.set(entity, columnFill(field, resultMap));
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException();
             } catch (IllegalAccessException e) {
@@ -197,6 +236,7 @@ public class EntityUtil {
     /**
      * 用数据库字段填充类属性
      * @param field 属性
+     * @param resultSet jdbc结果集
      * @return 数据库字段值, 且对应实体entity的数据类型
      */
     private static Object columnFill(Field field, ResultSet resultSet) throws SQLException {
@@ -234,5 +274,16 @@ public class EntityUtil {
             default:
                 throw new TypeNotSupportedException(field.getType().toString());
         }
+    }
+
+    /**
+     * 用数据库字段填充类属性
+     * @param field 属性
+     * @param resultMap map结果集
+     * @return 数据库字段值, 且对应实体entity的数据类型
+     */
+    private static Object columnFill(Field field, Map<String, Object> resultMap) {
+        String columnName = columnName(field);
+        return resultMap.get(columnName);
     }
 }

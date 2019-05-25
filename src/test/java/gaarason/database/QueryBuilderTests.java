@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 @FixMethodOrder(MethodSorters.JVM)
-public class ModelTests extends DatabaseApplicationTests {
+public class QueryBuilderTests extends DatabaseApplicationTests {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 

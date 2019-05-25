@@ -71,7 +71,7 @@
     <root level="debug">
         <!--debug级别输出到文件和控制台-->
         <appender-ref ref="console"/>
-        <!--<appender-ref ref="file_debug"/>-->
+        <appender-ref ref="file_debug"/>
         <!--info和error级别输出到文件-->
         <appender-ref ref="file_info"/>
         <appender-ref ref="file_error"/>
