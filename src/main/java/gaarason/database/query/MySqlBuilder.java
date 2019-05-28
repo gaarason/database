@@ -8,11 +8,13 @@ import gaarason.database.eloquent.OrderBy;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.query.grammars.MySqlGrammar;
+import gaarason.database.support.Collection;
 import gaarason.database.utils.EntityUtil;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +25,13 @@ public class MySqlBuilder<T> extends Builder<T> {
      */
     private List<String> columnList = new ArrayList<>();
 
-    public MySqlBuilder(ProxyDataSource dataSourceModel, Model<T> model, T entity) {
-        super(dataSourceModel,  model, entity);
+    public MySqlBuilder(ProxyDataSource dataSourceModel, Model<T> model, Class<T> entityClass) {
+        super(dataSourceModel,  model, entityClass);
     }
 
     @Override
     Grammar grammarFactory() {
-        return new MySqlGrammar(EntityUtil.tableName(entity));
+        return new MySqlGrammar(EntityUtil.tableName(entityClass));
     }
 
 
@@ -244,14 +246,14 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public T firstOrFail() throws EntityNotFoundException {
+    public Collection<T> firstOrFail() throws EntityNotFoundException {
         limit(1);
-        return querySql((resultSet) -> EntityUtil.setValueToEntity(entity, resultSet, columnList));
+        return querySql(true);
     }
 
     @Override
     @Nullable
-    public T first() {
+    public Collection<T> first() {
         try {
             return firstOrFail();
         } catch (EntityNotFoundException e) {
@@ -260,8 +262,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public List<T> get() {
-        return querySql((resultSet) -> EntityUtil.setValueToEntityList(model, resultSet, columnList));
+    public Collection<T> get() {
+        return querySql(false);
     }
 
     @Override

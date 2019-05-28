@@ -1,21 +1,21 @@
 package gaarason.database;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gaarason.database.models.StudentSingleModel;
 import gaarason.database.support.Collection;
-import gaarason.database.utils.FormatUtil;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import javax.annotation.Resource;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -23,112 +23,155 @@ import java.util.Map;
 @SpringBootTest
 @FixMethodOrder(MethodSorters.JVM)
 @Slf4j
-public class CollectionTests {
+public class CollectionTests extends DatabaseApplicationTests {
+    @Resource
+    DataSource dataSourceMaster0;
 
-    private static List<Map<String, Object>> mapList = new ArrayList<>();
+    private Collection<StudentSingleModel.Entity> collection0;
 
-    @BeforeClass
-    public static void beforeClass() {
-        Map<String, Object> map0 = new HashMap<>();
-        mapList.add(map0);
+    private Collection<StudentSingleModel.Entity> collection1;
 
-        Map<String, Object> map1 = new HashMap<>();
-        map1.put("name", "小明");
-        map1.put("age", Integer.valueOf("16"));
-        mapList.add(map1);
+    private Collection<StudentSingleModel.Entity> collection2;
 
-        Map<String, Object> map2 = new HashMap<>();
-        map2.put("name", "小明明明");
-        map2.put("age", Integer.valueOf("16"));
-        map2.put("sex", Byte.valueOf("0"));
-        map2.put("subject", null);
-        mapList.add(map2);
+    private Collection<StudentSingleModel.Entity> collection3;
 
-        Map<String, Object> map3 = new HashMap<>();
-        map3.put("name", "小明明明");
-        map3.put("age", Integer.valueOf("16"));
-        map3.put("sex", Byte.valueOf("0"));
-        map3.put("subject", null);
-        map3.put("something else", "一个不在entity中的属性");
-        mapList.add(map3);
+    @Before
+    public void before() throws SQLException {
+        Connection        connection        = dataSourceMaster0.getConnection();
+        PreparedStatement preparedStatement = connection.prepareStatement("select * from student limit 1");
+        ResultSet         resultSet         = preparedStatement.executeQuery();
+        collection0 = new Collection<>(StudentSingleModel.Entity.class, resultSet, false);
+        connection.close();
 
-        Map<String, Object> map4 = new HashMap<>();
-        mapList.add(map4);
+
+        Connection connection1 = dataSourceMaster0.getConnection();
+        PreparedStatement preparedStatement1 = connection1.prepareStatement("select * from student order by " +
+            "id desc limit 3 ");
+        ResultSet resultSet1 = preparedStatement1.executeQuery();
+        collection1 = new Collection<>(StudentSingleModel.Entity.class, resultSet1, false);
+        connection1.close();
+
+        Connection connection2 = dataSourceMaster0.getConnection();
+        PreparedStatement preparedStatement2 = connection2.prepareStatement("select count(*) as re from student limit" +
+            " 1");
+        ResultSet resultSet2 = preparedStatement2.executeQuery();
+        collection2 = new Collection<>(StudentSingleModel.Entity.class, resultSet2, false);
+        connection2.close();
+
+
+        Connection        connection3        = dataSourceMaster0.getConnection();
+        PreparedStatement preparedStatement3 = connection3.prepareStatement("select * from student limit 3");
+        ResultSet         resultSet3         = preparedStatement3.executeQuery();
+        collection3 = new Collection<>(StudentSingleModel.Entity.class, resultSet3,false);
+        connection3.close();
     }
 
     @Test
     public void testToJson() throws JsonProcessingException {
+        String s = collection0.toJson();
+        Assert.assertEquals(s,
+            "{\"updated_at\":1272118263000,\"teacher_id\":0,\"sex\":2,\"name\":\"小明\",\"created_at\":1237022123000,\"id\":1,\"age\":6}");
 
-        Collection objectCollection = new Collection(mapList.get(0));
-        String s = objectCollection.toJson();
-        Assert.assertEquals(s, "{}");
+        String s1 = collection1.toJsonMultidimensional();
+        Assert.assertEquals(s1,
+            "[{\"updated_at\":1272118263000,\"teacher_id\":0,\"sex\":1,\"name\":\"象帕\",\"created_at\":1237090523000,\"id\":10,\"age\":15},{\"updated_at\":1272118263000,\"teacher_id\":0,\"sex\":1,\"name\":\"莫西卡\",\"created_at\":1237126523000,\"id\":9,\"age\":17},{\"updated_at\":1272118263000,\"teacher_id\":0,\"sex\":1,\"name\":\"金庸\",\"created_at\":1237025903000,\"id\":8,\"age\":17}]");
 
-        Collection objectCollection1 = new Collection(mapList.get(1));
-        String s1 = objectCollection1.toJson();
-        Assert.assertEquals(s1, "{\"name\":\"小明\",\"age\":16}");
+        String s2 = collection2.toJsonMultidimensional();
+        Assert.assertEquals(s2, "[{\"re\":10}]");
 
-        Collection objectCollection2 = new Collection(mapList.get(2));
-        String s2 = objectCollection2.toJson();
-        Assert.assertEquals(s2, "{\"subject\":null,\"sex\":0,\"name\":\"小明明明\",\"age\":16}");
     }
 
     @Test
-    public void testToString()  {
-        Collection objectCollection = new Collection(mapList.get(0));
-        String s = objectCollection.toString();
-        Assert.assertEquals(s, "");
+    public void testToMap() {
+        Map map = collection0.toMap();
+        log.info("map : {}", map);
+        Map map1 = collection1.toMap();
+        log.info("map1 : {}", map1);
+        Map map2 = collection2.toMap();
+        log.info("map2 : {}", map2);
 
-        Collection objectCollection1 = new Collection(mapList.get(1));
-        String s1 = objectCollection1.toString();
-        Assert.assertEquals(s1, "age=16&name=小明");
+//        Collection objectCollection1 = new Collection(mapList.get(1));
+//        Map        map1              = objectCollection1.toMap();
+//        log.info("map1 : {}", map1);
+//
+//        Collection objectCollection2 = new Collection(mapList.get(2));
+//        Map        map2              = objectCollection2.toMap();
+//        log.info("map2 : {}", map2);
+//
+//        Collection objectCollection3 = new Collection(mapList.get(3));
+//        Map        map3              = objectCollection3.toMap();
+//        log.info("map3 : {}", map3);
 
-        Collection objectCollection2 = new Collection(mapList.get(2));
-        String s2 = objectCollection2.toString();
-        Assert.assertEquals(s2, "age=16&name=小明明明&sex=0");
     }
 
     @Test
-    public void testToObject()  {
-        TestCollection objectCollection = new TestCollection(mapList.get(0));
-        SomeEntity     someEntity       = objectCollection.toObject();
-        log.info("someEntity : {}", someEntity);
-        Assert.assertNull(someEntity.getName());
-
-        TestCollection objectCollection1 = new TestCollection(mapList.get(1));
-        SomeEntity     someEntity1       = objectCollection1.toObject();
-        log.info("someEntity1 : {}", someEntity1);
-        Assert.assertEquals(someEntity1.getName(), "小明");
-
-        TestCollection objectCollection2 = new TestCollection(mapList.get(2));
-        SomeEntity     someEntity2        = objectCollection2.toObject();
-        log.info("someEntity2 : {}", someEntity2);
-        Assert.assertEquals(someEntity2.getSex(), Byte.valueOf("0"));
-
-        TestCollection objectCollection3 = new TestCollection(mapList.get(3));
-        SomeEntity     someEntity3        = objectCollection3.toObject();
-        log.info("someEntity3 : {}", someEntity3);
-        Assert.assertEquals(someEntity2.getSex(), Byte.valueOf("0"));
+    public void testToMapMultidimensional() {
+        List list = collection0.toMapMultidimensional();
+        log.info("list : {}", list);
+        List list1 = collection1.toMapMultidimensional();
+        log.info("list1 : {}", list1);
+        List list2 = collection2.toMapMultidimensional();
+        log.info("list2 : {}", list2);
     }
 
-    @Data
-    public static class SomeEntity {
-        private String  name;
+    @Test
+    public void testToString() {
+        String s = collection0.toSearch();
+        Assert.assertEquals(s,
+            "age=6&created_at=2009-03-14 17:15:23.0&id=1&name=小明&sex=2&teacher_id=0&updated_at=2010-04-24 22:11:03.0");
 
-        private Integer age;
+        String s1 = collection1.toSearch();
+        Assert.assertEquals(s1,
+            "age=15&created_at=2009-03-15 12:15:23.0&id=10&name=象帕&sex=1&teacher_id=0&updated_at=2010-04-24 22:11:03.0");
 
-        private Byte    sex;
-
-        private String  subject;
+        String s2 = collection2.toSearch();
+        Assert.assertEquals(s2, "re=10");
     }
 
-    public static class TestCollection extends Collection<SomeEntity>{
+    @Test
+    public void testToStringMultidimensional() {
+        String s = collection0.toSearchMultidimensional();
+        Assert.assertEquals(s,
+            "0[age]=6&0[created_at]=2009-03-14 17:15:23.0&0[id]=1&0[name]=小明&0[sex]=2&0[teacher_id]=0&0[updated_at]=2010-04-24 22:11:03.0");
 
-        /**
-         * 新建集合
-         * @param metadataMap 元数据
-         */
-        public TestCollection(Map<String, Object> metadataMap) {
-            super(metadataMap);
-        }
+        String s1 = collection1.toSearchMultidimensional();
+        Assert.assertEquals(s1,
+            "0[age]=15&0[created_at]=2009-03-15 12:15:23" +
+                ".0&0[id]=10&0[name]=象帕&0[sex]=1&0[teacher_id]=0&0[updated_at]=2010-04-24 22:11:03.0&1[age]=17&1[created_at]=2009-03-15 22:15:23.0&1[id]=9&1[name]=莫西卡&1[sex]=1&1[teacher_id]=0&1[updated_at]=2010-04-24 22:11:03.0&2[age]=17&2[created_at]=2009-03-14 18:18:23.0&2[id]=8&2[name]=金庸&2[sex]=1&2[teacher_id]=0&2[updated_at]=2010-04-24 22:11:03.0");
+        String s2 = collection2.toSearchMultidimensional();
+        Assert.assertEquals(s2, "0[re]=10");
     }
+
+    @Test
+    public void testToObject() {
+        StudentSingleModel.Entity entity = collection0.toObject();
+        log.info("entity : {}", entity);
+        Assert.assertEquals(entity.getAge(), Byte.valueOf("6"));
+        Assert.assertEquals(entity.getName(), "小明");
+
+        StudentSingleModel.Entity entity1 = collection1.toObject();
+        log.info("entity1 : {}", entity1);
+        Assert.assertEquals(entity1.getAge(), Byte.valueOf("15"));
+        Assert.assertEquals(entity1.getName(), "象帕");
+
+
+    }
+
+    @Test
+    public void testToObjectList() {
+        List<StudentSingleModel.Entity> entityList = collection0.toObjectList();
+        log.info("entityList : {}", entityList);
+        Assert.assertEquals(entityList.size(), 1);
+        Assert.assertEquals(entityList.get(0).getName(), "小明");
+
+        List<StudentSingleModel.Entity> entityList1 = collection1.toObjectList();
+        log.info("entityList1 : {}", entityList1);
+        Assert.assertEquals(entityList1.size(), 3);
+        Assert.assertEquals(entityList1.get(0).getName(), "象帕");
+        Assert.assertEquals(entityList1.get(1).getName(), "莫西卡");
+        Assert.assertEquals(entityList1.get(2).getName(), "金庸");
+
+
+    }
+
 }
