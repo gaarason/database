@@ -8,6 +8,7 @@ import gaarason.database.contracts.function.GetJDBCResultToCollection;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
+import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.support.Collection;
 import gaarason.database.utils.FormatUtil;
@@ -102,43 +103,44 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
 
     /**
      * 执行sql, 处理jdbc结果集, 返回目标类型对象
+     * @param throwEmpty 当查询结果为空时,是否抛出异常
+     * @return 收集器
+     * @throws SQLRuntimeException     数据库异常
+     * @throws EntityNotFoundException 查询结果为空
+     */
+    Collection<T> querySql(boolean throwEmpty) throws SQLRuntimeException, EntityNotFoundException {
+        Connection connection = theConnection(false);
+        try {
+            ResultSet resultSet = executeSql(connection, SqlType.SELECT).executeQuery();
+            return new Collection<>(entityClass, resultSet, throwEmpty);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction() && connection != null) {
+                connectionClose(connection);
+            }
+        }
+    }
+
+//    /**
+//     * 执行sql, 处理jdbc结果集, 返回目标类型对象
+//     * @param callback jdbc结果集处理回调
 //     * @param <V>      返回的对象类型
-     * @return 返回的对象
-     */
-    Collection<T> querySql(boolean throwEmpty) {
-        try {
-            Connection connection = theConnection(false);
-            ResultSet  resultSet  = executeSql(connection, SqlType.SELECT).executeQuery();
-
-            Collection<T> collection          = new Collection<>(entityClass, resultSet, throwEmpty);
-            if (!inTransaction()) {
-                connection.close();
-            }
-            return collection;
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 执行sql, 处理jdbc结果集, 返回目标类型对象
-     * @param callback jdbc结果集处理回调
-     * @param <V>      返回的对象类型
-     * @return 返回的对象
-     */
-    <V> Collection<V> querySql(GetJDBCResultToCollection<V> callback) {
-        try {
-            Connection connection = theConnection(false);
-            ResultSet  resultSet  = executeSql(connection, SqlType.SELECT).executeQuery();
-            Collection<V> collection          = callback.get(resultSet);
-            if (!inTransaction()) {
-                connection.close();
-            }
-            return collection;
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
-        }
-    }
+//     * @return 返回的对象
+//     */
+//    <V> Collection<V> querySql(GetJDBCResultToCollection<V> callback) {
+//        try {
+//            Connection connection = theConnection(false);
+//            ResultSet  resultSet  = executeSql(connection, SqlType.SELECT).executeQuery();
+//            Collection<V> collection          = callback.get(resultSet);
+//            if (!inTransaction()) {
+//                connection.close();
+//            }
+//            return collection;
+//        } catch (SQLException e) {
+//            throw new SQLRuntimeException(e.getMessage(), e);
+//        }
+//    }
 
     @Override
     public boolean begin() {
@@ -220,12 +222,35 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         }
     }
 
-    private Connection theConnection(boolean isWrite) throws SQLException {
+    /**
+     * 获取指定的数据库连接
+     * @param isWrite 写连接
+     * @return 数据库连接
+     * @throws SQLRuntimeException 数据库连接获取失败
+     */
+    private Connection theConnection(boolean isWrite) throws SQLRuntimeException {
         if (inTransaction()) {
             return getLocalThreadConnection();
         } else {
             dataSource.setWrite(isWrite);
-            return dataSource.getConnection();
+            try {
+                return dataSource.getConnection();
+            } catch (SQLException e) {
+                throw new SQLRuntimeException(e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
+     * 关闭数据库连接
+     * @param connection 数据库连接
+     * @throws SQLRuntimeException 关闭连接出错
+     */
+    private static void connectionClose(Connection connection) throws SQLRuntimeException {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
         }
     }
 
@@ -240,8 +265,8 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
             String       sql           = grammar.generateSql(sqlType);
             List<String> parameterList = grammar.getParameterList();
 
-            log.debug("sql : {}", sql);
-            log.debug("parameterList : {}", parameterList);
+            // 日志记录
+            log(sql, parameterList);
 
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             int               i                 = 1;
@@ -268,6 +293,18 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         }
         SqlType sqlType = wholeSql ? SqlType.SELECT : SqlType.SUBQUERY;
         return FormatUtil.bracket(subBuilder.grammar.generateSql(sqlType));
+    }
+
+    /**
+     * sql日志记录
+     * @param sql           带占位符的sql
+     * @param parameterList 参数
+     */
+    private static void log(String sql, List<String> parameterList) {
+        log.debug("SQL with placeholder : {}", sql);
+        log.debug("SQL parameterList    : {}", parameterList);
+        String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
+        log.debug("SQL complete         : {}", format);
     }
 
 }
