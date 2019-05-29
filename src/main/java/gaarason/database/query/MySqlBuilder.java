@@ -7,6 +7,7 @@ import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.OrderBy;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.EntityNotFoundException;
+import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.query.grammars.MySqlGrammar;
 import gaarason.database.support.Collection;
 import gaarason.database.utils.EntityUtil;
@@ -14,19 +15,13 @@ import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MySqlBuilder<T> extends Builder<T> {
 
-    /**
-     * 查询数据库的字段
-     */
-    private List<String> columnList = new ArrayList<>();
-
     public MySqlBuilder(ProxyDataSource dataSourceModel, Model<T> model, Class<T> entityClass) {
-        super(dataSourceModel,  model, entityClass);
+        super(dataSourceModel, model, entityClass);
     }
 
     @Override
@@ -170,7 +165,6 @@ public class MySqlBuilder<T> extends Builder<T> {
 
     @Override
     public Builder<T> select(String column) {
-        columnList.add(column);
         String sqlPart = FormatUtil.column(column);
         grammar.pushSelect(sqlPart);
         return this;
@@ -246,14 +240,14 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Collection<T> firstOrFail() throws EntityNotFoundException {
+    public Collection<T> firstOrFail() throws SQLRuntimeException, EntityNotFoundException {
         limit(1);
         return querySql(true);
     }
 
     @Override
     @Nullable
-    public Collection<T> first() {
+    public Collection<T> first() throws SQLRuntimeException {
         try {
             return firstOrFail();
         } catch (EntityNotFoundException e) {
@@ -262,17 +256,17 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Collection<T> get() {
+    public Collection<T> get() throws SQLRuntimeException {
         return querySql(false);
     }
 
     @Override
-    public int insert() {
+    public int insert() throws SQLRuntimeException {
         return updateSql(SqlType.INSERT);
     }
 
     @Override
-    public int insert(T entity) {
+    public int insert(T entity) throws SQLRuntimeException {
         // 获取entity所有有效字段
         List<String> columnNameList = EntityUtil.columnNameList(entity);
         // 获取entity所有有效字段的值
@@ -286,7 +280,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public int insert(List<T> entityList) {
+    public int insert(List<T> entityList) throws SQLRuntimeException {
         // 获取entity所有有效字段
         List<String>       columnNameList = EntityUtil.columnNameList(entityList.get(0));
         List<List<String>> valueListList  = new ArrayList<>();
@@ -304,12 +298,12 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public int update() {
+    public int update() throws SQLRuntimeException {
         return updateSql(SqlType.UPDATE);
     }
 
     @Override
-    public int update(T entity) {
+    public int update(T entity) throws SQLRuntimeException {
         // 获取entity所有有效字段对其值得映射
         Map<String, String> stringStringMap = EntityUtil.columnValueMap(entity);
 
@@ -319,7 +313,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public int delete() {
+    public int delete() throws SQLRuntimeException {
         return updateSql(SqlType.DELETE);
     }
 

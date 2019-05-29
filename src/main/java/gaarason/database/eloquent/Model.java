@@ -14,6 +14,10 @@ abstract public class Model<T> {
      */
     abstract public ProxyDataSource getProxyDataSource();
 
+    /**
+     * 得到实体类型
+     * @return 实体类型
+     */
     private Class<T> entityClass() {
         return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
@@ -24,13 +28,13 @@ abstract public class Model<T> {
         return new MySqlBuilder<>(proxyDataSource, this, entityClass());
     }
 
-    public T find() {
-        return null;
-    }
-
-    public T findOrFail() {
-        return null;
-    }
+//    public T find() {
+//        return null;
+//    }
+//
+//    public T findOrFail() {
+//        return null;
+//    }
 
 
 }

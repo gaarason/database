@@ -4,16 +4,17 @@ import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.*;
-import gaarason.database.contracts.function.GetJDBCResultToCollection;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.support.Collection;
+import gaarason.database.utils.ExceptionUtil;
 import gaarason.database.utils.FormatUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,7 +30,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 数据实体类
      */
-    protected Class<T> entityClass;
+    Class<T> entityClass;
 
     /**
      * 数据库连接
@@ -39,7 +40,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 避免线程锁的connection缓存
      */
-    private Map<String, Connection> localThreadConnectionList = new HashMap<>();
+    private static Map<String, Connection> localThreadConnectionList = new HashMap<>();
 
     /**
      * sql生成器
@@ -49,19 +50,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     /**
      * 数据模型
      */
-    Model<T> model;
-
-
-    private void setLocalThreadConnection(Connection connection) {
-        String name = Thread.currentThread().getName();
-        localThreadConnectionList.put(name, connection);
-    }
-
-    private Connection getLocalThreadConnection() {
-        String name = Thread.currentThread().getName();
-        return localThreadConnectionList.get(name);
-    }
-
+    private Model<T> model;
 
     public Builder(ProxyDataSource dataSource, Model<T> model, Class<T> entityClass) {
         this.dataSource = dataSource;
@@ -101,8 +90,69 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      */
     abstract Grammar grammarFactory();
 
+    @Override
+    public void begin() throws SQLRuntimeException {
+        try {
+            dataSource.setInTransaction(true);
+            Connection connection = dataSource.getConnection();
+            connection.setAutoCommit(false);
+            setLocalThreadConnection(connection);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void commit() throws SQLRuntimeException {
+        try {
+            getLocalThreadConnection().commit();
+            getLocalThreadConnection().close();
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            dataSource.setInTransaction(false);
+
+        }
+    }
+
+    @Override
+    public void rollBack() throws SQLRuntimeException {
+        try {
+            getLocalThreadConnection().rollback();
+            getLocalThreadConnection().close();
+            dataSource.setInTransaction(false);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            dataSource.setInTransaction(false);
+        }
+    }
+
+    @Override
+    public boolean inTransaction() {
+        return dataSource.isInTransaction();
+    }
+
+    @Override
+    public boolean transaction(Runnable runnable, int maxAttempts) {
+        for (int currentAttempt = 1; currentAttempt <= maxAttempts; currentAttempt++) {
+            begin();
+            try {
+                runnable.run();
+                commit();
+                return true;
+            } catch (Exception e) {
+                rollBack();
+                if (!ExceptionUtil.causedByDeadlock(e)) {
+                    throw e;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
-     * 执行sql, 处理jdbc结果集, 返回目标类型对象
+     * 执行sql, 处理jdbc结果集, 返回收集器
      * @param throwEmpty 当查询结果为空时,是否抛出异常
      * @return 收集器
      * @throws SQLRuntimeException     数据库异常
@@ -116,109 +166,30 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
-            if (!inTransaction() && connection != null) {
+            if (!inTransaction()) {
                 connectionClose(connection);
             }
-        }
-    }
-
-//    /**
-//     * 执行sql, 处理jdbc结果集, 返回目标类型对象
-//     * @param callback jdbc结果集处理回调
-//     * @param <V>      返回的对象类型
-//     * @return 返回的对象
-//     */
-//    <V> Collection<V> querySql(GetJDBCResultToCollection<V> callback) {
-//        try {
-//            Connection connection = theConnection(false);
-//            ResultSet  resultSet  = executeSql(connection, SqlType.SELECT).executeQuery();
-//            Collection<V> collection          = callback.get(resultSet);
-//            if (!inTransaction()) {
-//                connection.close();
-//            }
-//            return collection;
-//        } catch (SQLException e) {
-//            throw new SQLRuntimeException(e.getMessage(), e);
-//        }
-//    }
-
-    @Override
-    public boolean begin() {
-        try {
-            dataSource.setInTransaction(true);
-            Connection connection = dataSource.getConnection();
-            connection.setAutoCommit(false);
-            setLocalThreadConnection(connection);
-            if (!inTransaction()) {
-                connection.close();
-            }
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean commit() {
-        try {
-            getLocalThreadConnection().commit();
-            getLocalThreadConnection().close();
-            dataSource.setInTransaction(false);
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean rollBack() {
-        try {
-            getLocalThreadConnection().rollback();
-            getLocalThreadConnection().close();
-            dataSource.setInTransaction(false);
-            return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean inTransaction() {
-        return dataSource.isInTransaction();
-    }
-
-    @Override
-    public boolean transaction(Runnable runnable) {
-        try {
-            begin();
-            runnable.run();
-            return commit();
-        } catch (Exception e) {
-            rollBack();
-            return false;
         }
     }
 
     /**
      * 执行sql, 返回收影响的行数
      * @return 影响的行数
+     * @throws SQLRuntimeException 数据库异常
      */
-    int updateSql(SqlType sqlType) {
+    int updateSql(SqlType sqlType) throws SQLRuntimeException {
         if (sqlType != SqlType.INSERT && !grammar.hasWhere())
             throw new ConfirmOperationException("You made a risky operation without where conditions, use where(1) " +
                 "for sure");
+        Connection connection = theConnection(true);
         try {
-            Connection connection    = theConnection(true);
-            int        affectedLines = executeSql(connection, sqlType).executeUpdate();
-            if (!inTransaction()) {
-                connection.close();
-            }
-            return affectedLines;
+            return executeSql(connection, sqlType).executeUpdate();
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction()) {
+                connectionClose(connection);
+            }
         }
     }
 
@@ -259,24 +230,23 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @param connection 数据库连接
      * @param sqlType    sql类型
      * @return 预执行对象
+     * @throws SQLException sql错误
      */
-    private PreparedStatement executeSql(Connection connection, SqlType sqlType) {
-        try {
-            String       sql           = grammar.generateSql(sqlType);
-            List<String> parameterList = grammar.getParameterList();
-
-            // 日志记录
-            log(sql, parameterList);
-
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            int               i                 = 1;
-            for (String parameter : parameterList) {
-                preparedStatement.setString(i++, parameter);
-            }
-            return preparedStatement;
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
+    private PreparedStatement executeSql(Connection connection, SqlType sqlType) throws SQLException {
+        // sql组装执行
+        String       sql           = grammar.generateSql(sqlType);
+        List<String> parameterList = grammar.getParameterList();
+        // 日志记录
+        log(sql, parameterList);
+        // 预执行
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        // 参数绑定
+        int i = 1;
+        for (String parameter : parameterList) {
+            preparedStatement.setString(i++, parameter);
         }
+        // 返回预执行对象
+        return preparedStatement;
     }
 
     /**
@@ -305,6 +275,30 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         log.debug("SQL parameterList    : {}", parameterList);
         String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
         log.debug("SQL complete         : {}", format);
+    }
+
+    /**
+     * 将数据库连接保存在线程内
+     * @param connection 数据库连接
+     */
+    private void setLocalThreadConnection(Connection connection) {
+        localThreadConnectionList.put(localThreadConnectionListName(), connection);
+    }
+
+    /**
+     * 从线程内取出数据库连接
+     * @return 数据库连接
+     */
+    private Connection getLocalThreadConnection() {
+        return localThreadConnectionList.get(localThreadConnectionListName());
+    }
+
+    private String localThreadConnectionListName() {
+        String processName = ManagementFactory.getRuntimeMXBean().getName();
+        String threadName  = Thread.currentThread().getName();
+        String className   = getClass().toString();
+        return processName + threadName + className;
+
     }
 
 }

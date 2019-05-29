@@ -51,7 +51,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         int insert = studentModel.newQuery().select(columnNameList).value(valueList).insert();
         Assert.assertEquals(insert, 1);
         StudentSingleModel.Entity entityFirst = studentModel.newQuery().where("id", "134").firstOrFail().toObject();
-        SimpleDateFormat    formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat          formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Assert.assertNotNull(entityFirst);
         Assert.assertEquals(134, entityFirst.getId().intValue());
         Assert.assertEquals(11, entityFirst.getAge().intValue());
@@ -73,7 +73,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(insert, 1);
 
         StudentSingleModel.Entity entityFirst = studentModel.newQuery().where("id", "99").firstOrFail().toObject();
-        SimpleDateFormat    formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat          formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Assert.assertNotNull(entityFirst);
         Assert.assertEquals(entity.getId(), entityFirst.getId());
         Assert.assertEquals(entity.getAge(), entityFirst.getAge());
@@ -108,7 +108,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 //    }
 
     @Test
-    public void 更新_普通更新(){
+    public void 更新_普通更新() {
         int update = studentModel.newQuery().data("name", "xxcc").where("id", "3").update();
         Assert.assertEquals(update, 1);
 
@@ -125,8 +125,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 //            Assert.assertEquals(gg.getName(), "vvv");
 //        }
     }
+
     @Test
-    public void 更新_字段自增自减(){
+    public void 更新_字段自增自减() {
         int update = studentModel.newQuery().dataDecrement("age", 2).whereRaw("id=4").update();
         Assert.assertEquals(update, 1);
         StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "4").firstOrFail().toObject();
@@ -142,7 +143,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 更新_通过MAP更新(){
+    public void 更新_通过MAP更新() {
         Map<String, String> map = new HashMap<>();
         map.put("name", "gggg");
         map.put("age", "7");
@@ -159,7 +160,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 更新_通过entity更新(){
+    public void 更新_通过entity更新() {
         StudentSingleModel.Entity entity1 = new StudentSingleModel.Entity();
         entity1.setAge(Byte.valueOf("7"));
         entity1.setName("ggg");
@@ -176,7 +177,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 删除_硬(){
+    public void 删除_硬() {
         int id = studentModel.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
@@ -189,7 +190,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 删除_软(){
+    public void 删除_软() {
         int id = studentModel.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
@@ -234,7 +235,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertNull(first1.getUpdatedAt());
 
         Collection<StudentSingleModel.Entity> first3 =
-                studentModel.newQuery().select("name", "id").where("id", "not found").first();
+            studentModel.newQuery().select("name", "id").where("id", "not found").first();
         Assert.assertNull(first3);
 
         Collection<StudentSingleModel.Entity> collectionFirst5 = studentModel.newQuery().first();
@@ -255,7 +256,11 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 查询_多条记录() {
-        List<StudentSingleModel.Entity> entities1 = studentModel.newQuery().select("name").select("id").get().toObjectList();
+        List<StudentSingleModel.Entity> entities1 = studentModel.newQuery()
+            .select("name")
+            .select("id")
+            .get()
+            .toObjectList();
         Assert.assertEquals(entities1.size(), 10);
 
         List<StudentSingleModel.Entity> entities2 = studentModel.newQuery().get().toObjectList();
@@ -273,7 +278,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_字段之间比较() {
-        Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery().whereColumn("id", ">", "sex").first();
+        Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery()
+            .whereColumn("id", ">", "sex")
+            .first();
         Assert.assertNotNull(entityCollection);
         System.out.println(entityCollection);
         StudentSingleModel.Entity first = entityCollection.toObject();
@@ -286,7 +293,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(first.getUpdatedAt().toString(), "2010-04-24 22:11:03.0");
 
         Collection<StudentSingleModel.Entity> entityCollection2 =
-            studentModel.newQuery().whereColumn("id","sex").first();
+            studentModel.newQuery().whereColumn("id", "sex").first();
         Assert.assertNotNull(entityCollection2);
         System.out.println(entityCollection2);
         StudentSingleModel.Entity first2 = entityCollection2.toObject();
@@ -314,35 +321,45 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(first.getUpdatedAt().toString(), "2010-04-24 22:11:03.0");
 
 
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id", ">", "2").get().toObjectList();
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery()
+            .where("id", ">", "2")
+            .get()
+            .toObjectList();
         Assert.assertEquals(entityList1.size(), 8);
 
         List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().where("id", ">", "2")
-                                                            .where("id", "<", "7").get().toObjectList();
+            .where("id", "<", "7").get().toObjectList();
         Assert.assertEquals(entityList2.size(), 4);
 
         StudentSingleModel.Entity entity2 = studentModel.newQuery().where("id", "4").firstOrFail().toObject();
         Assert.assertEquals(entity2.getId().intValue(), 4);
 
         StudentSingleModel.Entity entity1 = studentModel.newQuery()
-                                                  .where("created_at", ">=", "2009-03-15 22:15:23.0")
-                                                  .firstOrFail().toObject();
+            .where("created_at", ">=", "2009-03-15 22:15:23.0")
+            .firstOrFail().toObject();
         Assert.assertEquals(entity1.getId().intValue(), 9);
 
         StudentSingleModel.Entity entity3 = studentModel.newQuery()
-                                                  .where("created_at", ">=", "2009-03-15 22:15:23")
-                                                  .firstOrFail().toObject();
+            .where("created_at", ">=", "2009-03-15 22:15:23")
+            .firstOrFail().toObject();
         Assert.assertEquals(entity3.getId().intValue(), 9);
 
     }
 
     @Test
     public void 条件_Between() {
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().whereBetween("id", "3", "5").get().toObjectList();
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery()
+            .whereBetween("id", "3", "5")
+            .get()
+            .toObjectList();
         Assert.assertEquals(entityList1.size(), 3);
 
-        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().whereBetween("id", "3", "5").whereNotBetween(
-                "id", "3", "4").get().toObjectList();
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery()
+            .whereBetween("id", "3", "5")
+            .whereNotBetween(
+                "id", "3", "4")
+            .get()
+            .toObjectList();
         Assert.assertEquals(entityList2.size(), 1);
     }
 
@@ -353,7 +370,10 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         idList.add("5");
         idList.add("6");
         idList.add("7");
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().whereIn("id", idList).get().toObjectList();
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery()
+            .whereIn("id", idList)
+            .get()
+            .toObjectList();
         Assert.assertEquals(entityList1.size(), 4);
 
         List<String> idList2 = new ArrayList<>();
@@ -362,7 +382,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         idList2.add("7");
 
         List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().whereIn("id", idList).whereNotIn("id",
-                idList2).get().toObjectList();
+            idList2).get().toObjectList();
         Assert.assertEquals(entityList2.size(), 3);
     }
 
@@ -389,26 +409,26 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_orWhere() {
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id","3").orWhere(
-                (builder) -> builder.whereRaw("id=4")
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id", "3").orWhere(
+            (builder) -> builder.whereRaw("id=4")
         ).get().toObjectList();
         Assert.assertEquals(entityList1.size(), 2);
 
-        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().where("id","3").orWhere(
-                (builder) -> builder.whereBetween("id", "4", "10").where("age",">","11")
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().where("id", "3").orWhere(
+            (builder) -> builder.whereBetween("id", "4", "10").where("age", ">", "11")
         ).get().toObjectList();
         Assert.assertEquals(entityList2.size(), 6);
     }
 
     @Test
     public void 条件_andWhere() {
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id","3").andWhere(
-                (builder) -> builder.whereRaw("id=4")
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id", "3").andWhere(
+            (builder) -> builder.whereRaw("id=4")
         ).get().toObjectList();
         Assert.assertEquals(entityList1.size(), 0);
 
-        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().where("id","7").andWhere(
-                (builder) -> builder.whereBetween("id", "4", "10").where("age",">","11")
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().where("id", "7").andWhere(
+            (builder) -> builder.whereBetween("id", "4", "10").where("age", ">", "11")
         ).get().toObjectList();
         Assert.assertEquals(entityList2.size(), 1);
         Assert.assertEquals(entityList2.get(0).getId().intValue(), 7);
@@ -416,10 +436,10 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_andWhere与orWhere无线嵌套() {
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id","3").orWhere(
-                (builder) -> builder.where("age",">","11").where("id","7").andWhere(
-                        (builder2) -> builder2.whereBetween("id", "4", "10").where("age",">","11")
-                )
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id", "3").orWhere(
+            (builder) -> builder.where("age", ">", "11").where("id", "7").andWhere(
+                (builder2) -> builder2.whereBetween("id", "4", "10").where("age", ">", "11")
+            )
         ).from("student").select("id", "name").get().toObjectList();
         Assert.assertEquals(entityList1.size(), 2);
     }
@@ -461,9 +481,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(first.getId().intValue(), 10);
 
         StudentSingleModel.Entity first2 = studentModel.newQuery()
-                                                 .where("id", "<>", "10")
-                                                 .orderBy("id", OrderBy.DESC)
-                                                 .firstOrFail().toObject();
+            .where("id", "<>", "10")
+            .orderBy("id", OrderBy.DESC)
+            .firstOrFail().toObject();
         Assert.assertNotNull(first2);
         Assert.assertEquals(first2.getId().intValue(), 9);
     }
@@ -482,16 +502,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 事物(){
+    public void 事物() {
+        thrown.expect(RuntimeException.class);
         studentModel.newQuery().transaction(() -> {
-            studentModel.newQuery().where("id", "1").data("name","dddddd").update();
-
+            studentModel.newQuery().where("id", "1").data("name", "dddddd").update();
             StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
             Assert.assertEquals(entity.getName(), "dddddd");
-
             throw new RuntimeException("ssss");
-
-        });
+        }, 3);
 
         StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
         Assert.assertNotEquals(entity.getName(), "dddddd");

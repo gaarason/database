@@ -16,18 +16,18 @@ public interface Execute<T> {
 
     Collection<T> firstOrFail() throws EntityNotFoundException, SQLRuntimeException;
 
-    Collection<T> get();
+    Collection<T> get() throws SQLRuntimeException;
 
-    int insert();
+    int insert() throws SQLRuntimeException;
 
-    int insert(T entity);
+    int insert(T entity) throws SQLRuntimeException;
 
-    int insert(List<T> entityList);
+    int insert(List<T> entityList) throws SQLRuntimeException;
 
-    int update();
+    int update() throws SQLRuntimeException;
 
-    int update(T entity);
+    int update(T entity) throws SQLRuntimeException;
 
-    int delete();
+    int delete() throws SQLRuntimeException;
 
 }
