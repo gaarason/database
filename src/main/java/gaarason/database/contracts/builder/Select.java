@@ -13,7 +13,6 @@ public interface Select<T> {
 
     Builder<T> select(List<String> columnList);
 
-    Builder<T> selectFunction(String function, Runnable callback, @Nullable String alias);
-
+    Builder<T> selectFunction(String function, String parameter, @Nullable String alias);
 
 }

@@ -187,9 +187,11 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> selectFunction(String function, Runnable callback, @Nullable String alias) {
-        // todo
-        return null;
+    public Builder<T> selectFunction(String function, String parameter, @Nullable String alias) {
+        String sqlPart = function + FormatUtil.bracket(parameter) + (alias == null ? "" :
+            " as " + FormatUtil.quotes(alias));
+        grammar.pushSelect(sqlPart);
+        return this;
     }
 
     @Override

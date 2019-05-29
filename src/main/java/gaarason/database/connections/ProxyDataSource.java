@@ -70,7 +70,11 @@ public class ProxyDataSource implements DataSource {
         hasSlave = false;
     }
 
-    public DataSource getRealDataSource(){
+    /**
+     * 得到 DataSource
+     * @return DataSource
+     */
+    private DataSource getRealDataSource(){
         if(!hasSlave || inTransaction || isWrite){
             log.debug("---------------- write dataSource ---------------");
             return weightSelection(localThreadMasterConnectionIndexList, masterDataSourceList);
@@ -81,8 +85,8 @@ public class ProxyDataSource implements DataSource {
     }
 
     /**
-     * 一个线程绑定一个从库
-     * @return
+     * 一个线程绑定一个DataSource
+     * @return 当前线程的DataSource
      */
     private DataSource weightSelection(Map<String, Integer> localThreadConnectionIndexList,
                                        List<DataSource> dataSourceList) {
@@ -92,9 +96,10 @@ public class ProxyDataSource implements DataSource {
     }
 
     /**
-     * 线程安全
-     * @param size
-     * @return
+     * 获索引,可以保证线程安全
+     * @param localThreadConnectionIndexList 线程安全的DataSource索引的List
+     * @param size 尺寸
+     * @return 索引
      */
     private int theLocalThreadConnectionIndex(Map<String, Integer> localThreadConnectionIndexList, int size) {
         String threadFlag = Thread.currentThread().getName();
@@ -109,8 +114,7 @@ public class ProxyDataSource implements DataSource {
 
     @Override
     public Connection getConnection() throws SQLException {
-        Connection connection = getRealDataSource().getConnection();
-        return connection;
+        return getRealDataSource().getConnection();
     }
 
     @Override

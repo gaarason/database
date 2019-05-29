@@ -120,8 +120,12 @@ public class Collection<T> {
     /**
      * 元数据转实体对象
      * @return 实体对象
+     * @throws EntityNotFoundException 实体不存在
      */
-    public T toObject() {
+    public T toObject() throws EntityNotFoundException {
+        if(metadataMapList.size() == 0){
+            throw new EntityNotFoundException();
+        }
         return toObject(entityClass, metadataMapList.get(0));
     }
 

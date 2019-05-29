@@ -8,12 +8,21 @@ import java.util.List;
 public class FormatUtil {
 
     /**
-     * 字段格式化
-     * @param something
-     * @return
+     * 给字段加上反引号
+     * @param something 字段 eg: sum(order.amount) AS sum_price
+     * @return eg: sum(`order`.`amount`) AS `sum_price`
      */
     public static String column(String something){
         return backQuote(something);
+    }
+
+    /**
+     * 给字段加上单引号
+     * @param something 别名 eg: alice
+     * @return eg: 'alice'
+     */
+    public static String quotes(String something){
+        return '\'' + something.trim() + '\'';
     }
 
     /**
