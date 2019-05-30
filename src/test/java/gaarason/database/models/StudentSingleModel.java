@@ -35,4 +35,12 @@ public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
         @Column(name = "updated_at")
         private Date updatedAt;
     }
+
+    public StudentSingleModel.Entity getById(String id){
+        return newQuery().where("id", id).firstOrFail().toObject();
+    }
+
+    public String getNameById(String id){
+        return newQuery().where("id", id).select("name").firstOrFail().toObject().getName();
+    }
 }

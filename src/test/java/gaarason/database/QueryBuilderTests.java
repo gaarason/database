@@ -546,7 +546,16 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     public void 安全_SQL注入() {
         String 用户非法输入 = "小明\' and 0<>(select count(*) from student) and \'1";
         thrown.expect(EntityNotFoundException.class);
-        StudentSingleModel.Entity name = studentModel.newQuery().where("name", 用户非法输入).get().toObject();
+        studentModel.newQuery().where("name", 用户非法输入).get().toObject();
+    }
+
+    @Test
+    public void 便捷_model方法定义() {
+        StudentSingleModel.Entity byId = studentModel.getById("3");
+        Assert.assertEquals(byId.getName(), "小腾");
+
+        String nameById = studentModel.getNameById("4");
+        Assert.assertEquals(nameById, "小云");
     }
 
 }
