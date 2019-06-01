@@ -134,7 +134,7 @@ public class MySqlGrammar implements Grammar {
     }
 
     private String dealGroup() {
-        return "";
+        return null == group ? "" : " group by " + group;
     }
 
     private String dealHaving() {

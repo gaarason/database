@@ -52,12 +52,12 @@ public class ProxyDataSource implements DataSource {
     /**
      * 线程安全
      */
-    private Map<String, Integer> localThreadMasterConnectionIndexList = new HashMap<>();
+    private Map<String, Integer> localThreadMasterDataSourceIndexList = new HashMap<>();
 
     /**
      * 线程安全
      */
-    private Map<String, Integer> localThreadSlaveConnectionIndexList = new HashMap<>();
+    private Map<String, Integer> localThreadSlaveDataSourceIndexList = new HashMap<>();
 
     public ProxyDataSource(List<DataSource> masterDataSourceList, List<DataSource> slaveDataSourceList){
         this.masterDataSourceList = masterDataSourceList;
@@ -76,11 +76,11 @@ public class ProxyDataSource implements DataSource {
      */
     private DataSource getRealDataSource(){
         if(!hasSlave || inTransaction || isWrite){
-            log.debug("---------------- write dataSource ---------------");
-            return weightSelection(localThreadMasterConnectionIndexList, masterDataSourceList);
+            log.debug("---------------- using write dataSource ---------------");
+            return weightSelection(localThreadMasterDataSourceIndexList, masterDataSourceList);
         }else{
-            log.debug("---------------- read dataSource ---------------");
-            return weightSelection(localThreadSlaveConnectionIndexList, slaveDataSourceList);
+            log.debug("---------------- using read dataSource ---------------");
+            return weightSelection(localThreadSlaveDataSourceIndexList, slaveDataSourceList);
         }
     }
 
@@ -91,7 +91,7 @@ public class ProxyDataSource implements DataSource {
     private DataSource weightSelection(Map<String, Integer> localThreadConnectionIndexList,
                                        List<DataSource> dataSourceList) {
         int i = theLocalThreadConnectionIndex(localThreadConnectionIndexList, dataSourceList.size());
-        log.debug("---------------- use dataSourceList the {}  ---------------", i);
+        log.debug("---------------- using dataSourceList the {}  ---------------", i);
         return dataSourceList.get(i);
     }
 
@@ -104,9 +104,9 @@ public class ProxyDataSource implements DataSource {
     private int theLocalThreadConnectionIndex(Map<String, Integer> localThreadConnectionIndexList, int size) {
         String threadFlag = Thread.currentThread().getName();
         if (!localThreadConnectionIndexList.containsKey(threadFlag)) {
-            log.debug("---------------- 加入线程安全 {} ---------------", size);
             // todo 按权重选
             int    index  = size == 0 ? 0 : (new Random()).nextInt(size);
+            log.debug("---------------- 首次使用,将DataSource与该线程绑定,加入线程安全 index : {} ---------------", index);
             localThreadConnectionIndexList.put(threadFlag, index);
         }
         return localThreadConnectionIndexList.get(threadFlag);
@@ -114,7 +114,14 @@ public class ProxyDataSource implements DataSource {
 
     @Override
     public Connection getConnection() throws SQLException {
-        return getRealDataSource().getConnection();
+
+        DataSource realDataSource = getRealDataSource();
+
+        Connection connection     = realDataSource.getConnection();
+
+        return connection;
+
+//        return getRealDataSource().getConnection();
     }
 
     @Override

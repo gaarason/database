@@ -13,10 +13,12 @@ import gaarason.database.support.Collection;
 import gaarason.database.utils.EntityUtil;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
+import sun.security.provider.MD5;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 public class MySqlBuilder<T> extends Builder<T> {
 
@@ -234,6 +236,14 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
+    public Builder<T> group(String... columnArray) {
+        for (String column : columnArray) {
+            group(column);
+        }
+        return this;
+    }
+
+    @Override
     public Builder<T> group(List<String> columnList) {
         for (String column : columnList) {
             group(column);
@@ -396,5 +406,40 @@ public class MySqlBuilder<T> extends Builder<T> {
     public Builder<T> dataDecrement(String column, int steps) {
         String sqlPart = FormatUtil.column(column) + '=' + FormatUtil.column(column) + '-' + steps;
         return data(sqlPart);
+    }
+
+    @Override
+    public Long count(String column) {
+        String              alias    = UUID.randomUUID().toString();
+        Map<String, Object> countMap = selectFunction("count", column, alias).firstOrFail().toMap();
+        return (Long) countMap.get(alias);
+    }
+
+    @Override
+    public String max(String column) {
+        String              alias    = UUID.randomUUID().toString();
+        Map<String, Object> countMap = selectFunction("max", column, alias).firstOrFail().toMap();
+        return countMap.get(alias).toString();
+    }
+
+    @Override
+    public String min(String column) {
+        String              alias    = UUID.randomUUID().toString();
+        Map<String, Object> countMap = selectFunction("min", column, alias).firstOrFail().toMap();
+        return countMap.get(alias).toString();
+    }
+
+    @Override
+    public String avg(String column) {
+        String              alias    = UUID.randomUUID().toString();
+        Map<String, Object> countMap = selectFunction("avg", column, alias).firstOrFail().toMap();
+        return countMap.get(alias).toString();
+    }
+
+    @Override
+    public String sum(String column) {
+        String              alias    = UUID.randomUUID().toString();
+        Map<String, Object> countMap = selectFunction("sum", column, alias).firstOrFail().toMap();
+        return countMap.get(alias).toString();
     }
 }

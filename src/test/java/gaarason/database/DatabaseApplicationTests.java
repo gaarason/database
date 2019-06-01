@@ -1,6 +1,7 @@
 package gaarason.database;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import gaarason.database.connections.ProxyDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.*;
 import org.junit.runner.RunWith;
@@ -26,9 +27,11 @@ public class DatabaseApplicationTests {
     DataSource dataSource;
 
     @Resource
-    List<DataSource> dataSourceSlaveListSingle;
+    List<DataSource> dataSourceSlaveSingleList;
     @Resource
-    List<DataSource> dataSourceMasterListSingle;
+    List<DataSource> dataSourceMasterSingleList;
+    @Resource
+    ProxyDataSource proxyDataSourceSingle;
 
     private static String initSql = "";
 
@@ -50,8 +53,8 @@ public class DatabaseApplicationTests {
         log.debug("in before");
         log.debug("数据库重新初始化开始");
 
-        initDataSourceList(dataSourceSlaveListSingle);
-        initDataSourceList(dataSourceMasterListSingle);
+//        initDataSourceList(dataSourceSlaveSingleList);
+        initDataSourceList(dataSourceMasterSingleList);
 
         log.debug("数据库重新初始化完成");
     }
@@ -109,42 +112,44 @@ public class DatabaseApplicationTests {
 
     @Test
     public void simpleConnect() throws SQLException {
-        DruidDataSource druidDataSource = (DruidDataSource) dataSource;
+//        DruidDataSource druidDataSource = (DruidDataSource) dataSource;
+//        DruidDataSource druidDataSource = (DruidDataSource)dataSourceMasterListSingle.get(0);
+        DataSource druidDataSource = proxyDataSourceSingle;
 
-        System.out.println("数据源>>>>>>" + dataSource.getClass());
-        Connection connection1 = dataSource.getConnection();
-        Connection connection2 = dataSource.getConnection();
-        Connection connection3 = dataSource.getConnection();
+        System.out.println("数据源>>>>>>" + druidDataSource.getClass());
+        Connection connection1 = druidDataSource.getConnection();
+        Connection connection2 = druidDataSource.getConnection();
+        Connection connection3 = druidDataSource.getConnection();
 
-        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
+//        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
 
         connection2.close();
         connection3.close();
-        Connection connection4 = dataSource.getConnection();
-        Connection connection5 = dataSource.getConnection();
+//        Connection connection4 = dataSource.getConnection();
+//        Connection connection5 = dataSource.getConnection();
 
         System.out.println("连接>>>>>>>>>" + connection1);
         System.out.println("连接地址>>>>>" + connection1.getMetaData().getURL());
 
 
-        System.out.println("druidDataSource 数据源最大连接数：" + druidDataSource.getMaxActive());
-        System.out.println("druidDataSource 数据源初始化连接数：" + druidDataSource.getInitialSize());
-        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
+//        System.out.println("druidDataSource 数据源最大连接数：" + druidDataSource.getMaxActive());
+//        System.out.println("druidDataSource 数据源初始化连接数：" + druidDataSource.getInitialSize());
+//        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
 
         connection1.close();
 //        connection2.close();
 //        connection3.close();
-        connection4.close();
-        connection5.close();
+//        connection4.close();
+//        connection5.close();
 
-        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
+//        System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
 //        System.out.println("druidDataSource 数据源初始化连接数：" + druidDataSource.getInitialSize());
 
 
         for (int i = 0; i < 20; i++) {
-            Connection connection999 = dataSource.getConnection();
-            connection999.close();
-            System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
+//            Connection connection999 = dataSource.getConnection();
+//            connection999.close();
+//            System.out.println("druidDataSource 数据源当前连接数：" + druidDataSource.getConnectCount());
         }
     }
 

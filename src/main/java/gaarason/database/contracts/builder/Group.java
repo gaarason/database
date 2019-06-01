@@ -10,6 +10,8 @@ public interface Group<T> {
 
     Builder<T> group(String column);
 
+    Builder<T> group(String ...column);
+
     Builder<T> group(List<String> columnList);
 
 }

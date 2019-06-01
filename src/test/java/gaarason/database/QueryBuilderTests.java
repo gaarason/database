@@ -3,8 +3,8 @@ package gaarason.database;
 import gaarason.database.eloquent.OrderBy;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.EntityNotFoundException;
+import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.models.RelationshipStudentTeacherModel;
-import gaarason.database.models.StudentModel;
 import gaarason.database.models.StudentSingleModel;
 import gaarason.database.models.TeacherModel;
 import gaarason.database.support.Collection;
@@ -292,6 +292,29 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
+    public void 查询_聚合函数() {
+        Long count0 = studentModel.newQuery().where("sex", "1").group("age").count("id");
+        Assert.assertEquals(count0.intValue(), 1);
+
+        Long count = studentModel.newQuery().where("sex", "1").count("age");
+        Assert.assertEquals(count.intValue(), 6);
+
+        String max = studentModel.newQuery().where("sex", "1").max("id");
+        Assert.assertEquals(max, "10");
+
+        String min = studentModel.newQuery().where("sex", "1").min("id");
+        Assert.assertEquals(min, "3");
+
+        String avg = studentModel.newQuery().where("sex", "1").avg("id");
+        Assert.assertEquals(avg, "7.1667");
+
+        String sum = studentModel.newQuery().where("sex", "2").sum("id");
+        Assert.assertEquals(sum, "12");
+
+
+    }
+
+    @Test
     public void 条件_字段之间比较() {
         Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery()
             .whereColumn("id", ">", "sex")
@@ -487,6 +510,33 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             )
             .get().toObjectList();
         Assert.assertEquals(entityList2.size(), 0);
+    }
+
+    @Test
+    public void GROUP() {
+        List<StudentSingleModel.Entity> entities = studentModel.newQuery()
+            .select("id", "age")
+            .where("id", "&", "1")
+            .orderBy("id", OrderBy.DESC)
+            .group("sex","id","age")
+            .get()
+            .toObjectList();
+        System.out.println(entities);
+        Assert.assertEquals(entities.size(), 5);
+        Assert.assertEquals(entities.get(0).getId().intValue(), 9);
+        Assert.assertEquals(entities.get(1).getId().intValue(), 7);
+
+        // 严格模式
+        thrown.expect(SQLRuntimeException.class);
+        List<StudentSingleModel.Entity> entities1 = studentModel.newQuery()
+            .select("id", "name", "age")
+            .where("id", "&", "1")
+            .orderBy("id", OrderBy.DESC)
+            .group("sex","age")
+            .group("id")
+            .get()
+            .toObjectList();
+        System.out.println(entities1);
     }
 
     @Test
