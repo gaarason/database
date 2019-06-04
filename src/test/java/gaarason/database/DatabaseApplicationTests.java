@@ -23,8 +23,8 @@ import java.util.List;
 @Slf4j
 public class DatabaseApplicationTests {
 
-    @Resource
-    DataSource dataSource;
+//    @Resource
+//    DataSource dataSource;
 
     @Resource
     List<DataSource> dataSourceSlaveSingleList;

@@ -8,6 +8,7 @@ import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.EntityNotFoundException;
+import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.support.Collection;
 import gaarason.database.utils.ExceptionUtil;
@@ -91,7 +92,10 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     abstract Grammar grammarFactory();
 
     @Override
-    public void begin() throws SQLRuntimeException {
+    public void begin() throws SQLRuntimeException, NestedTransactionException {
+        if (dataSource.isInTransaction()) {
+            throw new NestedTransactionException();
+        }
         try {
             dataSource.setInTransaction(true);
             Connection connection = dataSource.getConnection();
@@ -105,7 +109,12 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     @Override
     public void commit() throws SQLRuntimeException {
         try {
+            Connection localThreadConnection = getLocalThreadConnection();
+
+
             getLocalThreadConnection().commit();
+
+
             getLocalThreadConnection().close();
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
@@ -120,7 +129,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         try {
             getLocalThreadConnection().rollback();
             getLocalThreadConnection().close();
-            dataSource.setInTransaction(false);
+//            dataSource.setInTransaction(false);
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
@@ -271,8 +280,8 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @param parameterList 参数
      */
     private static void log(String sql, List<String> parameterList) {
-        log.debug("SQL with placeholder : {}", sql);
-        log.debug("SQL parameterList    : {}", parameterList);
+//        log.debug("SQL with placeholder : {}", sql);
+//        log.debug("SQL parameterList    : {}", parameterList);
         String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
         log.debug("SQL complete         : {}", format);
     }
@@ -294,10 +303,11 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     }
 
     private String localThreadConnectionListName() {
-        String processName = ManagementFactory.getRuntimeMXBean().getName();
-        String threadName  = Thread.currentThread().getName();
-        String className   = getClass().toString();
-        return processName + threadName + className;
+        String processName        = ManagementFactory.getRuntimeMXBean().getName();
+        String threadName         = Thread.currentThread().getName();
+        String className          = getClass().toString();
+        int    dataSourceHashCode = dataSource.hashCode();
+        return processName + threadName + className + dataSourceHashCode;
 
     }
 

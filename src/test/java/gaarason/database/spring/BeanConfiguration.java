@@ -1,14 +1,12 @@
 package gaarason.database.spring;
 
+import com.alibaba.druid.filter.logging.Slf4jLogFilter;
 import com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceBuilder;
 import gaarason.database.connections.ProxyDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.*;
 
 import javax.sql.DataSource;
 import java.util.*;
@@ -18,12 +16,12 @@ import java.util.*;
 @PropertySource("database.properties")
 public class BeanConfiguration {
 
-//    @Bean
-//    public Slf4jLogFilter slf4jLogFilter(){
-//        Slf4jLogFilter slf4jLogFilter = new Slf4jLogFilter();
-//        slf4jLogFilter.setStatementExecutableSqlLogEnable(true);
-//        return slf4jLogFilter;
-//    }
+    @Bean
+    public Slf4jLogFilter slf4jLogFilter(){
+        Slf4jLogFilter slf4jLogFilter = new Slf4jLogFilter();
+        slf4jLogFilter.setStatementExecutableSqlLogEnable(true);
+        return slf4jLogFilter;
+    }
 
     @Bean(name = "dataSourceMaster0")
     @Primary
@@ -40,8 +38,10 @@ public class BeanConfiguration {
         return DruidDataSourceBuilder.create().build();
     }
 
+    // 非单利
     @Bean(name = "dataSourceMaster2")
     @ConfigurationProperties(prefix = "database.master2")
+    @Scope("prototype")
     public DataSource dataSourceMaster2() {
         log.info("-------------------- database.master2 init ---------------------");
         return DruidDataSourceBuilder.create().build();
@@ -95,13 +95,6 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public ProxyDataSource proxyDataSource(@Qualifier("dataSourceMasterList") List<DataSource> dataSourceMasterList, @Qualifier(
-        "dataSourceSlaveList") List<DataSource> readDataSourceList) {
-        return readDataSourceList.isEmpty() ? new ProxyDataSource(dataSourceMasterList) :
-            new ProxyDataSource(dataSourceMasterList, readDataSourceList);
-    }
-
-    @Bean
     public List<DataSource> dataSourceMasterSingleList() {
         List<DataSource> dataSources = new ArrayList<>();
         dataSources.add(dataSourceMaster0());
@@ -115,10 +108,36 @@ public class BeanConfiguration {
     }
 
     @Bean
+    public ProxyDataSource proxyDataSource(@Qualifier("dataSourceMasterList") List<DataSource> dataSourceMasterList, @Qualifier(
+        "dataSourceSlaveList") List<DataSource> readDataSourceList) {
+        return readDataSourceList.isEmpty() ? new ProxyDataSource(dataSourceMasterList) :
+            new ProxyDataSource(dataSourceMasterList, readDataSourceList);
+    }
+
+    @Bean
     public ProxyDataSource proxyDataSourceSingle(@Qualifier("dataSourceMasterSingleList") List<DataSource> dataSourceMasterList, @Qualifier(
         "dataSourceSlaveSingleList") List<DataSource> readDataSourceList) {
         return readDataSourceList.isEmpty() ? new ProxyDataSource(dataSourceMasterList) :
             new ProxyDataSource(dataSourceMasterList, readDataSourceList);
+    }
+
+
+
+    @Bean
+    @Scope("prototype")
+    public List<DataSource> dataSourceMaster2SingleList() {
+        List<DataSource> dataSources = new ArrayList<>();
+        dataSources.add(dataSourceMaster2());
+        return dataSources;
+    }
+
+    @Bean
+    public ProxyDataSource proxyDataSourceSingle2(@Qualifier("dataSourceMaster2SingleList") List<DataSource> dataSourceMasterList) {
+        return new ProxyDataSource(dataSourceMasterList);
+    }
+    @Bean
+    public ProxyDataSource proxyDataSourceSingle3(@Qualifier("dataSourceMaster2SingleList") List<DataSource> dataSourceMasterList) {
+        return new ProxyDataSource(dataSourceMasterList);
     }
 
 }
