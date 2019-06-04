@@ -13,7 +13,7 @@ public class StudentModel extends MasterSlaveModel<StudentModel.Entity> {
 
     @Data
     @Table(name = "student")
-    public static class Entity implements gaarason.database.eloquent.Entity {
+    public static class Entity {
         @Primary
         private Integer id;
 

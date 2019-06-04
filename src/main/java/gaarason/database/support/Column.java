@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.sql.ResultSetMetaData;
 
+/**
+ * jdbc字段值对象
+ */
 @Data
 public class Column {
 

@@ -13,6 +13,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * 收集器
+ * @param <T>
+ */
 @ToString
 public class Collection<T> {
 

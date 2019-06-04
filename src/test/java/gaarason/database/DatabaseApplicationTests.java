@@ -153,43 +153,6 @@ public class DatabaseApplicationTests {
         }
     }
 
-//    @Test
-//    public void simpleSelect() throws SQLException {
-//        String            sql               = "select * from " + table + " where id=?";
-//        PreparedStatement preparedStatement = dataSource.getConnection().prepareStatement(sql);
-//
-//        preparedStatement.setString(1, "qrwqrwr");
-//
-//        ResultSet resultSet = preparedStatement.executeQuery();
-//
-//        while (resultSet.next()) {
-//            System.out.println(resultSet.getString(1));
-//            System.out.println(resultSet.getString(2));
-//            System.out.println(resultSet.getString(3));
-//            System.out.println(resultSet.getString(4));
-//            System.out.println(resultSet.getString(5));
-//            System.out.println(resultSet.getString(6));
-//        }
-//        System.out.println(resultSet);
-//    }
-
-//    @Test
-//    public void select() throws SQLException {
-//
-////        DataSource dataSource = ssoTenantSaltModel.getDataSource();
-//        SsoTenantSalt ssoTenantSalt = ssoTenantSaltModel.newQuery().from("sso_tenant_salt")
-//                .where("id", "qrwqrwr").first();
-//
-//        System.out.println(ssoTenantSalt);
-//    }
-
-
-//    @Test
-//    public void close() throws SQLException {
-//        dataSource.getConnection().close();
-//        System.out.println("数据源关闭连接数");
-//
-//    }
 
 
 }

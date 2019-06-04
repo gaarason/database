@@ -15,7 +15,7 @@ public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
 
     @Data
     @Table(name = "student")
-    public static class Entity implements gaarason.database.eloquent.Entity {
+    public static class Entity {
         @Primary
         private Integer id;
 
@@ -34,6 +34,17 @@ public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
 
         @Column(name = "updated_at")
         private Date updatedAt;
+    }
+
+    @Override
+    public boolean retrieving(){
+        System.out.println("正在从数据库中查询");
+        return true;
+    }
+
+    @Override
+    public void retrieved(){
+        System.out.println("已经从数据库中查询到数据");
     }
 
     public StudentSingleModel.Entity getById(String id){
