@@ -1,19 +1,10 @@
 package gaarason.database.utils;
 
 import gaarason.database.eloquent.Column;
-import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.Table;
-import gaarason.database.exception.EntityNotFoundException;
-import gaarason.database.exception.TypeNotSupportedException;
-import gaarason.database.support.Collection;
 import org.springframework.lang.Nullable;
 
-import java.awt.*;
 import java.lang.reflect.Field;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Types;
-import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
@@ -21,57 +12,81 @@ import java.util.List;
 public class EntityUtil {
 
     /**
-     * 通过entity解析对应的字段和值组成的map, 忽略值为null的项目
-     * @param entity 数据表实体对象
-     * @param <T>    数据表实体类
+     * 通过entity解析对应的字段和值组成的map, 忽略不符合规则的字段
+     * @param entity     数据表实体对象
+     * @param insertType 新增?
+     * @param <T>        数据表实体类
      * @return 字段对值的映射
      */
-    public static <T> Map<String, String> columnValueMap(T entity) {
+    public static <T> Map<String, String> columnValueMap(T entity, boolean insertType) {
         Map<String, String> columnValueMap = new HashMap<>();
         Field[]             fields         = entity.getClass().getDeclaredFields();
         for (Field field : fields) {
             Object value = fieldGet(field, entity);
-            if (value != null) {
-                String columnName = columnName(field);
-                if (value instanceof Date) {
-                    SimpleDateFormat formatter  = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String           dateString = formatter.format(value);
-                    columnValueMap.put(columnName, dateString);
-                } else
-                    columnValueMap.put(columnName, value.toString());
+            if (effectiveField(field, value, insertType)) {
+                columnValueMap.put(columnName(field), valueFormat(value));
             }
         }
         return columnValueMap;
-
     }
 
     /**
-     * 通过entity解析对应的字段的值组成的list, 忽略值为null的项目
-     * @param entity 数据表实体对象
-     * @param <T>    数据表实体类
+     * 通过entity解析对应的字段组成的list,忽略不符合规则的字段
+     * @param entity     数据表实体对象
+     * @param <T>        数据表实体类
+     * @param insertType 新增?
+     * @return 字段组成的list
+     */
+    public static <T> List<String> columnNameList(T entity, boolean insertType) {
+        List<String> columnList = new ArrayList<>();
+        Field[]      fields     = entity.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            Object value = fieldGet(field, entity);
+            if (effectiveField(field, value, insertType))
+                columnList.add(columnName(field));
+        }
+        return columnList;
+    }
+
+    /**
+     * 通过entity解析对应的字段的值组成的list, 忽略不符合规则的字段
+     * @param entity     数据表实体对象
+     * @param <T>        数据表实体类
+     * @param insertType 新增?
      * @return 字段的值组成的list
      */
-    public static <T> List<String> valueList(T entity) {
+    public static <T> List<String> valueList(T entity, boolean insertType) {
         List<String> valueList = new ArrayList<>();
         Field[]      fields    = entity.getClass().getDeclaredFields();
         for (Field field : fields) {
             Object value = fieldGet(field, entity);
-            if (value != null) {
-                if (value instanceof Date) {
-                    SimpleDateFormat formatter  = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                    String           dateString = formatter.format(value);
-                    valueList.add(dateString);
-                } else
-                    valueList.add(value.toString());
-            }
+            if (effectiveField(field, value, insertType))
+                valueList.add(valueFormat(value));
+        }
+        return valueList;
+    }
 
+    /**
+     * 通过entity解析对应的字段的值组成的list, 忽略不符合规则的字段
+     * @param entity         数据表实体对象
+     * @param <T>            数据表实体类
+     * @param columnNameList 有效的属性名
+     * @return 字段的值组成的list
+     */
+    public static <T> List<String> valueList(T entity, List<String> columnNameList) {
+        List<String> valueList = new ArrayList<>();
+        Field[]      fields    = entity.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (columnNameList.contains(columnName(field))) {
+                valueList.add(valueFormat(fieldGet(field, entity)));
+            }
         }
         return valueList;
     }
 
     /**
      * 通过entity解析对应的表名
-     * @param entityClass    数据表实体类
+     * @param entityClass 数据表实体类
      * @return 数据表名
      */
     public static <T> String tableName(Class<T> entityClass) {
@@ -79,154 +94,28 @@ public class EntityUtil {
             Table table = entityClass.getAnnotation(Table.class);
             return table.name();
         }
-        return "";
+        return StringUtil.humpToLine(entityClass.getName());
     }
 
     /**
-     * 通过entity解析对应的字段组成的list,忽略值为null的项目
-     * @param entity 数据表实体对象
-     * @param <T>    数据表实体类
-     * @return 字段组成的list
+     * 是否有效字段
+     * @param field      字段
+     * @param value      字段值
+     * @param insertType 是否是新增,会通过字段上的注解column(insertable, updatable)进行忽略
+     * @return 有效
      */
-    public static <T> List<String> columnNameList(T entity) {
-        List<String> columnList = new ArrayList<>();
-        Field[]      fields     = entity.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (fieldGet(field, entity) != null) {
-                columnList.add(columnName(field));
+    private static boolean effectiveField(Field field, @Nullable Object value, boolean insertType) {
+        if (field.isAnnotationPresent(Column.class)) {
+            Column column = field.getAnnotation(Column.class);
+            // 注解中已经标记不可新增或者更新
+            if (insertType ? !column.insertable() : !column.updatable()) {
+                return false;
             }
+            // 注解中已经标记不可为null,但仍然为null
+            return column.nullable() || value != null;
         }
-        return columnList;
+        return value != null;
     }
-
-//    public static <T> T setValueToEntity(T entity, ResultSet resultSet, List<String> columnList) throws SQLException,
-//        EntityNotFoundException {
-//        Field[] fields = entity.getClass().getDeclaredFields();
-//        if (!resultSet.next())
-//            throw new EntityNotFoundException();
-//        fieldAssignment(fields, columnList, resultSet, entity);
-//        return entity;
-//    }
-//
-//    public static <T> Collection<T> setValueToCollection(T e, ResultSet resultSet) throws SQLException,
-//        EntityNotFoundException {
-//        Map<String, Object> stringObjectMap = setValueToMap(resultSet);
-//        return new Collection<T>(e, stringObjectMap);
-//    }
-
-//    private static Map<String, Object> setValueToMap(ResultSet resultSet) throws SQLException {
-//        ResultSetMetaData rsmd = resultSet.getMetaData();
-//        Map<String, Object> map = new HashMap<>();
-//        while (resultSet.next()) {
-//            for (int i = 0; i < rsmd.getColumnCount(); i++) {
-//                String colName  = rsmd.getColumnName(i + 1);
-//                int    columnType = rsmd.getColumnType(i+1);
-//                String columnTypeName = rsmd.getColumnTypeName(i + 1);
-//
-//                System.out.println("colName : " + colName + ", columnType : " + columnType + " , columnTypeName" +
-//                    " : " + columnTypeName);
-//
-//
-//
-//                Object colValue = resultSet.getObject(colName);
-////                if (col_value == null) {
-////                    col_value = "";
-////                }
-//                map.put(colName, colValue);
-//            }
-//        }
-//        return map;
-//    }
-
-//    /**
-//     * 将map结果集赋值到entity
-//     * @param entity     数据表实体对象
-//     * @param resultMap  map结果集
-//     * @param <T>        数据表实体类
-//     * @return entity
-//     * @throws EntityNotFoundException
-//     */
-//    public static <T> T setValueToEntity(T entity, Map<String, Object> resultMap) throws EntityNotFoundException {
-//        Field[] fields = entity.getClass().getDeclaredFields();
-//        fieldAssignment(fields, resultMap, entity);
-//        return entity;
-//    }
-//
-//    /**
-//     * 将jdbc结果集赋值到List
-//     * @param model      数据表模型
-//     * @param resultSet  jdbc结果集
-//     * @param columnList 查询字段集
-//     * @param <T>        数据表实体类
-//     * @return entityList
-//     * @throws SQLException
-//     */
-//    public static <T> List<T> setValueToEntityList(Model<T> model, ResultSet resultSet, List<String> columnList)
-//            throws SQLException {
-//        List<T> list = new ArrayList<>();
-//        while (resultSet.next()) {
-//            T       entity = model.newEntity();
-//            Field[] fields = entity.getClass().getDeclaredFields();
-//            fieldAssignment(fields, columnList, resultSet, entity);
-//            list.add(entity);
-//        }
-//        return list;
-//    }
-
-//    /**
-//     * 将数据库查询结果赋值给entity的field
-//     * @param fields     属性
-//     * @param columnList 查询字段集
-//     * @param resultSet  jdbc结果集
-//     * @param entity     数据表实体对象
-//     * @throws SQLException
-//     */
-//    private static void fieldAssignment(Field[] fields, List<String> columnList, ResultSet resultSet, Object entity)
-//        throws SQLException {
-//        for (Field field : fields) {
-//            // 非*, 且没在select中的字段则忽略,
-//            if (!columnList.contains(columnName(field)) && columnList.size() != 0) {
-//                continue;
-//            }
-//            field.setAccessible(true); // 设置些属性是可以访问的
-//            try {
-//                field.set(entity, columnFill(field, resultSet));
-//            } catch (IllegalArgumentException e) {
-//                throw new RuntimeException();
-//            } catch (IllegalAccessException e) {
-//                throw new RuntimeException();
-//            }
-//        }
-//    }
-
-//    /**
-//     * 将数据库查询结果赋值给entity的field
-//     * @param fields     属性
-//     * @param resultMap  map结果集
-//     * @param entity     数据表实体对象
-//     */
-//    private static void fieldAssignment(Field[] fields, Map<String, Object> resultMap,
-//                                        Object entity) {
-//        final Set<String> columnSet = resultMap.keySet();
-//        for (Field field : fields) {
-//            // 非*, 且没在select中的字段则忽略,
-//            if (!columnSet.contains(columnName(field)) && columnSet.size() != 0) {
-//                continue;
-//            }
-//            field.setAccessible(true); // 设置些属性是可以访问的
-//            try {
-//                field.set(entity, columnFill(field, resultMap));
-//            } catch (IllegalArgumentException e) {
-//                e.printStackTrace();
-//
-//                throw new RuntimeException();
-//            } catch (IllegalAccessException e) {
-//                e.printStackTrace();
-//
-//                throw new RuntimeException();
-//            }
-//        }
-//    }
 
     /**
      * 获取属性的值
@@ -240,6 +129,7 @@ public class EntityUtil {
             field.setAccessible(true); // 设置些属性是可以访问的
             return field.get(obj);
         } catch (IllegalAccessException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -249,67 +139,28 @@ public class EntityUtil {
      * @param field 属性
      * @return 数据库字段名
      */
-    private static String columnName(Field field) {
+    public static String columnName(Field field) {
         if (field.isAnnotationPresent(Column.class)) {
             Column column = field.getAnnotation(Column.class);
             if (!"".equals(column.name())) {
                 return column.name();
             }
         }
-        return field.getName();
+        return StringUtil.humpToLine(field.getName());
     }
 
     /**
-     * 用数据库字段填充类属性
-     * @param field 属性
-     * @param resultSet jdbc结果集
-     * @return 数据库字段值, 且对应实体entity的数据类型
+     * 格式化值到字符串
+     * @param value 原值
+     * @return 字符串
      */
-//    private static Object columnFill(Field field, ResultSet resultSet) throws SQLException {
-//        String columnName = columnName(field);
-//        switch (field.getType().toString()) {
-//            case "class java.util.Date":
-//            case "class java.sql.Timestamp":
-//                return resultSet.getTimestamp(columnName);
-//            case "class java.sql.Date":
-//                return resultSet.getDate(columnName);
-//            case "class java.sql.Time":
-//                return resultSet.getTime(columnName);
-//            case "class java.lang.String":
-//                return resultSet.getString(columnName);
-//            case "class java.lang.Integer":
-//                return resultSet.getInt(columnName);
-//            case "class java.math.BigInteger":
-//                return resultSet.getInt(columnName);
-//            case "class java.math.BigDecimal":
-//                return resultSet.getBigDecimal(columnName);
-//            case "class java.lang.Long":
-//                return resultSet.getLong(columnName);
-//            case "class java.lang.Float":
-//                return resultSet.getFloat(columnName);
-//            case "class java.lang.Double":
-//                return resultSet.getDouble(columnName);
-//            case "class java.lang.Boolean":
-//                return resultSet.getBoolean(columnName);
-//            case "class java.lang.Byte":
-//                return resultSet.getByte(columnName);
-//            case "class java.lang.Byte[]":
-//                return resultSet.getBytes(columnName);
-//            case "class java.lang.Short":
-//                return resultSet.getShort(columnName);
-//            default:
-//                throw new TypeNotSupportedException(field.getType().toString());
-//        }
-//    }
+    @Nullable
+    private static String valueFormat(@Nullable Object value) {
+        if (value instanceof Date) {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return formatter.format(value);
+        } else
+            return value == null ? null : value.toString();
+    }
 
-//    /**
-//     * 用数据库字段填充类属性
-//     * @param field 属性
-//     * @param resultMap map结果集
-//     * @return 数据库字段值, 且对应实体entity的数据类型
-//     */
-//    private static Object columnFill(Field field, Map<String, Object> resultMap) {
-//        String columnName = columnName(field);
-//        return resultMap.get(columnName);
-//    }
 }

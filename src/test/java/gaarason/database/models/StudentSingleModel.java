@@ -2,6 +2,7 @@ package gaarason.database.models;
 
 import gaarason.database.eloquent.Column;
 import gaarason.database.eloquent.Primary;
+import gaarason.database.eloquent.Record;
 import gaarason.database.eloquent.Table;
 import gaarason.database.models.base.MasterSlaveModel;
 import gaarason.database.models.base.SingleModel;
@@ -29,21 +30,21 @@ public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
         @Column(name = "teacher_id")
         private Integer teacherId;
 
-        @Column(name = "created_at")
+        @Column(name = "created_at", insertable = false, updatable = false)
         private Date createdAt;
 
-        @Column(name = "updated_at")
+        @Column(name = "updated_at", insertable = false, updatable = false)
         private Date updatedAt;
     }
 
     @Override
-    public boolean retrieving(){
-        System.out.println("正在从数据库中查询");
-        return true;
+    public boolean saving(Record<Entity> entityRecord){
+        System.out.println("正要 保存数据库中, 但是拒绝");
+        return false;
     }
 
     @Override
-    public void retrieved(){
+    public void retrieved(Record<Entity> entityRecord){
         System.out.println("已经从数据库中查询到数据");
     }
 

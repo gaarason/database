@@ -5,12 +5,14 @@ import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.*;
 import gaarason.database.eloquent.Model;
+import gaarason.database.eloquent.Record;
+import gaarason.database.eloquent.RecordList;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
-import gaarason.database.support.Collection;
+import gaarason.database.support.RecordFactory;
 import gaarason.database.utils.ExceptionUtil;
 import gaarason.database.utils.FormatUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -109,12 +111,8 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     @Override
     public void commit() throws SQLRuntimeException {
         try {
-            Connection localThreadConnection = getLocalThreadConnection();
-
-
+//            Connection localThreadConnection = getLocalThreadConnection();
             getLocalThreadConnection().commit();
-
-
             getLocalThreadConnection().close();
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
@@ -162,16 +160,35 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
 
     /**
      * 执行sql, 处理jdbc结果集, 返回收集器
-     * @param throwEmpty 当查询结果为空时,是否抛出异常
      * @return 收集器
      * @throws SQLRuntimeException     数据库异常
      * @throws EntityNotFoundException 查询结果为空
      */
-    Collection<T> querySql(boolean throwEmpty) throws SQLRuntimeException, EntityNotFoundException {
+    Record<T> querySql() throws SQLRuntimeException, EntityNotFoundException {
         Connection connection = theConnection(false);
         try {
             ResultSet resultSet = executeSql(connection, SqlType.SELECT).executeQuery();
-            return new Collection<>(entityClass, resultSet, throwEmpty);
+            return RecordFactory.newRecord(entityClass, model, resultSet);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction()) {
+                connectionClose(connection);
+            }
+        }
+    }
+
+    /**
+     * 执行sql, 处理jdbc结果集, 返回收集器
+     * @return 收集器
+     * @throws SQLRuntimeException     数据库异常
+     * @throws EntityNotFoundException 查询结果为空
+     */
+    RecordList<T> querySqlList() throws SQLRuntimeException, EntityNotFoundException {
+        Connection connection = theConnection(false);
+        try {
+            ResultSet resultSet = executeSql(connection, SqlType.SELECT).executeQuery();
+            return RecordFactory.newRecordList(entityClass, model, resultSet);
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {

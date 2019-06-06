@@ -1,12 +1,13 @@
 package gaarason.database;
 
 import gaarason.database.eloquent.OrderBy;
+import gaarason.database.eloquent.Record;
+import gaarason.database.eloquent.RecordList;
 import gaarason.database.exception.ConfirmOperationException;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.models.*;
-import gaarason.database.support.Collection;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -84,10 +85,10 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(entity.getAge(), entityFirst.getAge());
         Assert.assertEquals(entity.getName(), entityFirst.getName());
         Assert.assertEquals(entity.getTeacherId(), entityFirst.getTeacherId());
-        Assert.assertEquals(formatter.format(entity.getCreatedAt()), formatter.format(entityFirst.getCreatedAt()));
-        Assert.assertEquals(formatter.format(entity.getUpdatedAt()), formatter.format(entityFirst.getUpdatedAt()));
+        // 这两个字段在entity中标记为不可更新
+        Assert.assertNotEquals(formatter.format(entity.getCreatedAt()), formatter.format(entityFirst.getCreatedAt()));
+        Assert.assertNotEquals(formatter.format(entity.getUpdatedAt()), formatter.format(entityFirst.getUpdatedAt()));
     }
-
 
     @Test
     public void 新增_多条记录() {
@@ -106,10 +107,13 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         int insert = studentModel.newQuery().insert(entityList);
         Assert.assertEquals(insert, 901);
 
-        List<StudentSingleModel.Entity> entityList1 =
-            studentModel.newQuery().whereBetween("id", "300", "350").orderBy("id", OrderBy.DESC).get().toObjectList();
-        Assert.assertEquals(entityList1.size(), 51);
-        Assert.assertEquals(entityList1.get(0).getTeacherId().intValue(), 1050);
+//        List<StudentSingleModel.Entity> entityList1 =
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
+            .whereBetween("id", "300", "350")
+            .orderBy("id", OrderBy.DESC)
+            .get();
+        Assert.assertEquals(records.size(), 51);
+        Assert.assertEquals(records.get(0).getEntity().getTeacherId().intValue(), 1050);
     }
 
     @Test
@@ -124,11 +128,19 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
         int update2 = studentModel.newQuery().data("name", "vvv").where("id", ">", "3").update();
         Assert.assertEquals(update2, 7);
-        List<StudentSingleModel.Entity> entityList = studentModel.newQuery().whereRaw("id>3").get().toObjectList();
-        Assert.assertEquals(entityList.size(), 7);
-        for (StudentSingleModel.Entity gg : entityList) {
-            Assert.assertEquals(gg.getName(), "vvv");
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery().whereRaw("id>3").get();
+        Assert.assertEquals(records.size(), 7);
+
+
+        for (Record<StudentSingleModel.Entity> record : records) {
+
         }
+
+
+//        for (Record<StudentSingleModel.Entity> record : records) {
+//            Assert.assertEquals(record.getEntity().getName(), "vvv");
+//        }
+
     }
 
     @Test
@@ -186,7 +198,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         int id = studentModel.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
-        Collection<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
+        Record<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
         Assert.assertNull(id1);
 
         thrown.expect(ConfirmOperationException.class);
@@ -199,17 +211,17 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         int id = studentModel.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
-        Collection<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
+        Record<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
         Assert.assertNull(id1);
     }
 
     @Test
     public void 查询_单条记录() {
-        Collection<StudentSingleModel.Entity> collectionFirst1 =
+        Record<StudentSingleModel.Entity> RecordFirst1 =
             studentModel.newQuery().select("name").select("id").first();
-        log.info("collectionFirst1 : {}", collectionFirst1);
-        Assert.assertNotNull(collectionFirst1);
-        StudentSingleModel.Entity first1 = collectionFirst1.toObject();
+        log.info("RecordFirst1 : {}", RecordFirst1);
+        Assert.assertNotNull(RecordFirst1);
+        StudentSingleModel.Entity first1 = RecordFirst1.toObject();
         Assert.assertEquals(first1.getId(), new Integer(1));
         Assert.assertEquals(first1.getId().intValue(), 1);
         Assert.assertEquals(first1.getName(), "小明");
@@ -218,10 +230,10 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertNull(first1.getCreatedAt());
         Assert.assertNull(first1.getUpdatedAt());
 
-        Collection<StudentSingleModel.Entity> collectionFirst2 = studentModel.newQuery().select("name", "id",
+        Record<StudentSingleModel.Entity> RecordFirst2 = studentModel.newQuery().select("name", "id",
             "created_at").first();
-        Assert.assertNotNull(collectionFirst2);
-        StudentSingleModel.Entity first2 = collectionFirst2.toObject();
+        Assert.assertNotNull(RecordFirst2);
+        StudentSingleModel.Entity first2 = RecordFirst2.toObject();
         Assert.assertEquals(first2.getId(), new Integer(1));
         Assert.assertEquals(first2.getId().intValue(), 1);
         Assert.assertEquals(first2.getName(), "小明");
@@ -239,14 +251,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertNull(first1.getCreatedAt());
         Assert.assertNull(first1.getUpdatedAt());
 
-        Collection<StudentSingleModel.Entity> first3 =
+        Record<StudentSingleModel.Entity> first3 =
             studentModel.newQuery().select("name", "id").where("id", "not found").first();
         Assert.assertNull(first3);
 
-        Collection<StudentSingleModel.Entity> collectionFirst5 = studentModel.newQuery().first();
-        System.out.println(collectionFirst5);
-        Assert.assertNotNull(collectionFirst5);
-        StudentSingleModel.Entity first5 = collectionFirst5.toObject();
+        Record<StudentSingleModel.Entity> RecordFirst5 = studentModel.newQuery().first();
+        System.out.println(RecordFirst5);
+        Assert.assertNotNull(RecordFirst5);
+        StudentSingleModel.Entity first5 = RecordFirst5.toObject();
         Assert.assertEquals(first5.getId(), new Integer(1));
         Assert.assertEquals(first5.getId().intValue(), 1);
         Assert.assertEquals(first5.getName(), "小明");
@@ -266,6 +278,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             .select("id")
             .get()
             .toObjectList();
+
         Assert.assertEquals(entities1.size(), 10);
 
         List<StudentSingleModel.Entity> entities2 = studentModel.newQuery().get().toObjectList();
@@ -283,12 +296,12 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 查询_调用mysql中的其他函数() {
-        Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery()
+        Record<StudentSingleModel.Entity> entityRecord = studentModel.newQuery()
             .selectFunction("concat_ws", "\"-\",`name`,`id`", "newKey")
             .first();
-        Assert.assertNotNull(entityCollection);
-        StudentSingleModel.Entity entity          = entityCollection.toObject();
-        Map<String, Object>       stringObjectMap = entityCollection.toMap();
+        Assert.assertNotNull(entityRecord);
+        StudentSingleModel.Entity entity          = entityRecord.toObject();
+        Map<String, Object>       stringObjectMap = entityRecord.toMap();
         Assert.assertNull(entity.getId());
         Assert.assertNull(entity.getName());
         Assert.assertNull(entity.getAge());
@@ -321,12 +334,12 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_字段之间比较() {
-        Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery()
+        Record<StudentSingleModel.Entity> entityRecord = studentModel.newQuery()
             .whereColumn("id", ">", "sex")
             .first();
-        Assert.assertNotNull(entityCollection);
-        System.out.println(entityCollection);
-        StudentSingleModel.Entity first = entityCollection.toObject();
+        Assert.assertNotNull(entityRecord);
+        System.out.println(entityRecord);
+        StudentSingleModel.Entity first = entityRecord.toObject();
         Assert.assertEquals(first.getId(), new Integer(3));
         Assert.assertEquals(first.getId().intValue(), 3);
         Assert.assertEquals(first.getName(), "小腾");
@@ -335,11 +348,11 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(first.getCreatedAt().toString(), "2009-03-14 15:11:23.0");
         Assert.assertEquals(first.getUpdatedAt().toString(), "2010-04-24 22:11:03.0");
 
-        Collection<StudentSingleModel.Entity> entityCollection2 =
+        Record<StudentSingleModel.Entity> entityRecord2 =
             studentModel.newQuery().whereColumn("id", "sex").first();
-        Assert.assertNotNull(entityCollection2);
-        System.out.println(entityCollection2);
-        StudentSingleModel.Entity first2 = entityCollection2.toObject();
+        Assert.assertNotNull(entityRecord2);
+        System.out.println(entityRecord2);
+        StudentSingleModel.Entity first2 = entityRecord2.toObject();
         Assert.assertEquals(first2.getId(), new Integer(2));
         Assert.assertEquals(first2.getId().intValue(), 2);
         Assert.assertEquals(first2.getName(), "小张");
@@ -351,10 +364,10 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_普通条件() {
-        Collection<StudentSingleModel.Entity> entityCollection = studentModel.newQuery().where("id", ">", "2").first();
-        Assert.assertNotNull(entityCollection);
-        System.out.println(entityCollection);
-        StudentSingleModel.Entity first = entityCollection.toObject();
+        Record<StudentSingleModel.Entity> entityRecord = studentModel.newQuery().where("id", ">", "2").first();
+        Assert.assertNotNull(entityRecord);
+        System.out.println(entityRecord);
+        StudentSingleModel.Entity first = entityRecord.toObject();
         Assert.assertEquals(first.getId(), new Integer(3));
         Assert.assertEquals(first.getId().intValue(), 3);
         Assert.assertEquals(first.getName(), "小腾");
@@ -683,7 +696,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     public void 安全_SQL注入() {
         String 用户非法输入 = "小明\' and 0<>(select count(*) from student) and \'1";
         thrown.expect(EntityNotFoundException.class);
-        studentModel.newQuery().where("name", 用户非法输入).get().toObject();
+        studentModel.newQuery().where("name", 用户非法输入).firstOrFail();
     }
 
     @Test

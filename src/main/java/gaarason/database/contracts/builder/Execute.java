@@ -1,22 +1,21 @@
 package gaarason.database.contracts.builder;
 
+import gaarason.database.eloquent.Record;
+import gaarason.database.eloquent.RecordList;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.SQLRuntimeException;
-import gaarason.database.support.Collection;
 import org.springframework.lang.Nullable;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public interface Execute<T> {
 
     @Nullable
-    Collection<T> first() throws SQLRuntimeException;
+    Record<T> first() throws SQLRuntimeException;
 
-    Collection<T> firstOrFail() throws EntityNotFoundException, SQLRuntimeException;
+    Record<T> firstOrFail() throws EntityNotFoundException, SQLRuntimeException;
 
-    Collection<T> get() throws SQLRuntimeException;
+    RecordList<T> get() throws SQLRuntimeException;
 
     int insert() throws SQLRuntimeException;
 

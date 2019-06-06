@@ -3,17 +3,13 @@ package gaarason.database.query;
 import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.function.GenerateSqlPart;
-import gaarason.database.eloquent.Model;
-import gaarason.database.eloquent.OrderBy;
-import gaarason.database.eloquent.SqlType;
+import gaarason.database.eloquent.*;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.query.grammars.MySqlGrammar;
-import gaarason.database.support.Collection;
 import gaarason.database.utils.EntityUtil;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
-import sun.security.provider.MD5;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -252,14 +248,14 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Collection<T> firstOrFail() throws SQLRuntimeException, EntityNotFoundException {
+    public Record<T> firstOrFail() throws SQLRuntimeException, EntityNotFoundException {
         limit(1);
-        return querySql(true);
+        return querySql();
     }
 
     @Override
     @Nullable
-    public Collection<T> first() throws SQLRuntimeException {
+    public Record<T> first() throws SQLRuntimeException {
         try {
             return firstOrFail();
         } catch (EntityNotFoundException e) {
@@ -268,8 +264,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Collection<T> get() throws SQLRuntimeException {
-        return querySql(false);
+    public RecordList<T> get() throws SQLRuntimeException {
+        return querySqlList();
     }
 
     @Override
@@ -279,10 +275,10 @@ public class MySqlBuilder<T> extends Builder<T> {
 
     @Override
     public int insert(T entity) throws SQLRuntimeException {
-        // 获取entity所有有效字段
-        List<String> columnNameList = EntityUtil.columnNameList(entity);
+        // 获取entity所有有效sql字段
+        List<String> columnNameList = EntityUtil.columnNameList(entity, true);
         // 获取entity所有有效字段的值
-        List<String> valueList = EntityUtil.valueList(entity);
+        List<String> valueList = EntityUtil.valueList(entity, columnNameList);
         // 字段加入grammar
         select(columnNameList);
         // 字段的值加入grammar
@@ -294,11 +290,11 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public int insert(List<T> entityList) throws SQLRuntimeException {
         // 获取entity所有有效字段
-        List<String>       columnNameList = EntityUtil.columnNameList(entityList.get(0));
+        List<String>       columnNameList = EntityUtil.columnNameList(entityList.get(0), true);
         List<List<String>> valueListList  = new ArrayList<>();
         for (T entity : entityList) {
             // 获取entity所有有效字段的值
-            List<String> valueList = EntityUtil.valueList(entity);
+            List<String> valueList = EntityUtil.valueList(entity, columnNameList);
             valueListList.add(valueList);
         }
         // 字段加入grammar
@@ -317,7 +313,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public int update(T entity) throws SQLRuntimeException {
         // 获取entity所有有效字段对其值得映射
-        Map<String, String> stringStringMap = EntityUtil.columnValueMap(entity);
+        Map<String, String> stringStringMap = EntityUtil.columnValueMap(entity, false);
 
         data(stringStringMap);
         // 执行
