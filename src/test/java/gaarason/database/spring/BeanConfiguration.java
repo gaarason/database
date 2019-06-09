@@ -16,12 +16,12 @@ import java.util.*;
 @PropertySource("database.properties")
 public class BeanConfiguration {
 
-    @Bean
-    public Slf4jLogFilter slf4jLogFilter(){
-        Slf4jLogFilter slf4jLogFilter = new Slf4jLogFilter();
-        slf4jLogFilter.setStatementExecutableSqlLogEnable(true);
-        return slf4jLogFilter;
-    }
+//    @Bean
+//    public Slf4jLogFilter slf4jLogFilter(){
+//        Slf4jLogFilter slf4jLogFilter = new Slf4jLogFilter();
+//        slf4jLogFilter.setStatementExecutableSqlLogEnable(true);
+//        return slf4jLogFilter;
+//    }
 
     @Bean(name = "dataSourceMaster0")
     @Primary

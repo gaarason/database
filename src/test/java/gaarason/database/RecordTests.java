@@ -26,70 +26,28 @@ public class RecordTests extends DatabaseApplicationTests {
     public ExpectedException thrown = ExpectedException.none();
 
     @Autowired
-    RelationshipStudentTeacherModel relationshipStudentTeacherModel;
-
-    @Autowired
-    StudentSingleModel studentModel;
-
-    @Autowired
-    StudentSingle2Model student2Model;
-
-    @Autowired
-    StudentSingle3Model student3Model;
-
-    @Autowired
-    TeacherModel teacherModel;
+    StudentSingle4Model studentModel;
 
     @Test
-    public void 查询一条(){
-        Record<StudentSingleModel.Entity> activeRecord = studentModel.newQuery().where("id", "3").firstOrFail();
+    public void 查询一条() {
+        Record<StudentSingle4Model.Entity> record = studentModel.findOrFail("3");
+        StudentSingle4Model.Entity         entity = record.getEntity();
+        Assert.assertEquals(entity.getAge(), Byte.valueOf("16"));
+        Assert.assertEquals(entity.getName(), "小腾");
 
-        StudentSingleModel.Entity entity = activeRecord.getEntity();
+        Record<StudentSingle4Model.Entity> noRecord = studentModel.find("32");
+        Assert.assertNull(noRecord);
 
-        System.out.println(entity);
-
-
-//        Record<StudentSingleModel.Entity>     entityRecord     = studentModel.newRecord();
-//        Record<StudentSingleModel.Entity>     entityRecord1    = entityRecord.find("3");
-//        Assert.assertEquals(entityRecord, entityRecord1);
-//
-//
-        activeRecord.getEntity().setAge(Byte.valueOf("55"));
-        boolean save = activeRecord.save();
-        System.out.println(save);
-//
-        Byte age = studentModel.newQuery().where("id", "3").firstOrFail().toObject().getAge();
-        Assert.assertEquals(age, Byte.valueOf("55"));
+        Record<StudentSingle4Model.Entity> record2 = studentModel.find("9");
+        Assert.assertNotNull(record2);
+        StudentSingle4Model.Entity         entity2 = record2.getEntity();
+        Assert.assertEquals(entity2.getAge(), Byte.valueOf("17"));
+        Assert.assertEquals(entity2.getName(), "莫西卡");
 
     }
 
-//    @Test
-//    public void test() {
-//
-//        Record<StudentSingleModel.Entity> entityRecord = studentModel.newRecord();
-//
-//        StudentSingleModel.Entity entity = entityRecord.getEntity();
-//        entity.setId(95);
-//        entity.setName("行啊");
-//        entity.setAge(Byte.valueOf("5"));
-//        entity.setSex(Byte.valueOf("1"));
-//        entity.setTeacherId(0);
-//        entity.setCreatedAt(new Date());
-//        entity.setUpdatedAt(new Date());
-//
-//        boolean save = entityRecord.save();
-//        Assert.assertTrue(save);
-//
-//        List<StudentSingleModel.Entity> entities = studentModel.newQuery().get().toObjectList();
-//        Assert.assertEquals(entities.size(), 11);
-//
-////        List<StudentSingleModel.Entity> entities2 = studentModel.all("id", "name").toObjectList();
-////        Assert.assertEquals(entities2.size(), 11);
-//
-//    }
-
     @Test
-    public void 事件_retrieved(){
+    public void 事件_retrieved() {
 //        Collection<StudentSingleModel.Entity> entityCollection = studentModel.find("6");
     }
 

@@ -121,26 +121,17 @@ abstract public class Model<T> extends InitializeModel<T> {
         return new MySqlBuilder<>(proxyDataSource, this, entityClass);
     }
 
-//    public Collection<T> all(String... column) throws SQLRuntimeException {
-//        return newRecord().all(column);
-//    }
-//
-//    public Collection<T> findOrFail(String id) throws EntityNotFoundException, SQLRuntimeException {
-//        return newRecord().findOrFail(id);
-//    }
-//
-//    public Collection<T> findOrFail(String column, String value) throws EntityNotFoundException, SQLRuntimeException {
-//        return newRecord().findOrFail(column, value);
-//    }
-//
-//    @Nullable
-//    public Collection<T> find(String id) {
-//        return newRecord().find(id);
-//    }
-//
-//    @Nullable
-//    public Collection<T> find(String column, String value) {
-//        return newRecord().find(column, value);
-//    }
+    public RecordList<T> all(String... column) throws SQLRuntimeException {
+        return newQuery().select(column).get();
+    }
+
+    public Record<T> findOrFail(String id) throws EntityNotFoundException, SQLRuntimeException {
+        return newQuery().where(PrimaryKeyName, id).firstOrFail();
+    }
+
+    @Nullable
+    public Record<T> find(String id) {
+        return newQuery().where(PrimaryKeyName,id).first();
+    }
 
 }
