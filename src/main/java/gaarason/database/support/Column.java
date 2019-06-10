@@ -1,6 +1,7 @@
 package gaarason.database.support;
 
 import lombok.Data;
+import org.springframework.lang.Nullable;
 
 import java.sql.ResultSetMetaData;
 
@@ -18,6 +19,7 @@ public class Column {
     /**
      * 字段值
      */
+    @Nullable
     private Object value;
 
     /**

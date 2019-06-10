@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gaarason.database.exception.*;
 import gaarason.database.support.Column;
+import gaarason.database.utils.StringUtil;
+import gaarason.database.utils.EntityUtil;
 import lombok.Getter;
-import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -13,6 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 记录对象
+ * @param <T> 数据实体类
+ */
 public class Record<T> {
 
     /**
@@ -39,12 +45,12 @@ public class Record<T> {
      * 数据实体
      */
     @Getter
-    @Setter
     protected T entity;
 
     /**
      * 主键值
      */
+    @Nullable
     private Object originalPrimaryKeyValue;
 
     /**
@@ -72,6 +78,8 @@ public class Record<T> {
     public Record(Class<T> entityClass, Model<T> model) {
         this.entityClass = entityClass;
         this.model = model;
+        this.metadataMap = new HashMap<>();
+        entity = originalEntity = toObject();
         hasBind = false;
     }
 
@@ -99,7 +107,7 @@ public class Record<T> {
                 sb.append(key).append("=").append(s.toString()).append("&");
             }
         }
-        return rtrim(sb.toString(), "&");
+        return StringUtil.rtrim(sb.toString(), "&");
     }
 
     /**
@@ -169,7 +177,7 @@ public class Record<T> {
         throws TypeNotSupportedException {
         for (Field field : fields) {
 
-            String columnName = columnName(field);
+            String columnName = EntityUtil.columnName(field);
             Column column     = stringColumnMap.get(columnName);
             if (column == null) {
                 continue;
@@ -177,7 +185,7 @@ public class Record<T> {
             field.setAccessible(true); // 设置属性是可访问
             try {
                 Object value = columnFill(field, column.getValue());
-                field.set(entity, columnFill(field, value));
+                field.set(entity, value);
                 // 主键值记录
                 if (field.isAnnotationPresent(Primary.class)) {
                     originalPrimaryKeyValue = value;
@@ -194,7 +202,10 @@ public class Record<T> {
      * @param value 值
      * @return 数据库字段值, 且对应实体entity的数据类型
      */
-    private static Object columnFill(Field field, Object value) {
+    @Nullable
+    private static Object columnFill(Field field, @Nullable Object value) {
+        if (value == null)
+            return null;
         switch (field.getType().toString()) {
             case "class java.lang.Byte":
                 return Byte.valueOf(value.toString());
@@ -208,54 +219,49 @@ public class Record<T> {
     }
 
     /**
-     * 获取类属性对应的数据库字段名
-     * @param field 属性
-     * @return 数据库字段名
-     */
-    private static String columnName(Field field) {
-        if (field.isAnnotationPresent(gaarason.database.eloquent.Column.class)) {
-            gaarason.database.eloquent.Column column = field.getAnnotation(gaarason.database.eloquent.Column.class);
-            if (!"".equals(column.name())) {
-                return column.name();
-            }
-        }
-        return field.getName();
-    }
-
-    /**
-     * 移除字符串右侧的所有character
-     * @param str       原字符串
-     * @param character 将要移除的字符
-     * @return 处理后的字符
-     */
-    private static String rtrim(String str, String character) {
-        if (str.equals(""))
-            return str;
-        return str.substring(str.length() - 1).equals(character) ? rtrim(str.substring(0, str.length() - 1),
-            character) : str;
-    }
-
-    /**
      * 新增或者更新
      * 新增情况下: saving -> creating -> created -> saved
-     * 更新情况下: saving -> updating -> created -> updated
+     * 更新情况下: saving -> updating -> updated -> saved
      * @return 执行成功
      */
     public boolean save() {
+        // aop阻止
         if (!model.saving(this)) {
             return false;
         }
+        // 执行
         boolean success = hasBind ? update() : insert();
+        // aop通知
         model.saved(this);
+        // 响应
         return success;
     }
 
+    /**
+     * 删除
+     * deleting -> deleted
+     * @return 执行成功
+     */
     public boolean delete() {
+        // 主键未知
+        if (originalPrimaryKeyValue == null) {
+            throw new PrimaryKeyNotFoundException();
+        }
+        // aop阻止
         if (!model.deleting(this)) {
             return false;
         }
+        // 执行
         boolean success = model.newQuery().where(model.PrimaryKeyName, originalPrimaryKeyValue.toString()).delete() > 0;
+        // 成功删除后后,刷新自身属性
+        if (success){
+            this.metadataMap = new HashMap<>();
+            entity = originalEntity = toObject();
+            hasBind = false;
+        }
+        // aop通知
         model.deleted(this);
+        // 响应
         return success;
     }
 
@@ -265,11 +271,18 @@ public class Record<T> {
      * @return 执行成功
      */
     private boolean insert() {
+        // aop阻止
         if (!model.creating(this)) {
             return false;
         }
+        // 执行
         boolean success = model.newQuery().insert(entity) > 0;
+        // 成功插入后后,刷新自身属性
+        if (success)
+            selfUpdate(entity, true);
+        // aop通知
         model.created(this);
+        // 响应
         return success;
     }
 
@@ -279,14 +292,57 @@ public class Record<T> {
      * @return 执行成功
      */
     private boolean update() {
+        // 主键未知
+        if (originalPrimaryKeyValue == null) {
+            throw new PrimaryKeyNotFoundException();
+        }
+        // aop阻止
         if (!model.updating(this)) {
             return false;
         }
+        // 执行
         boolean success = model.newQuery()
             .where(model.PrimaryKeyName, originalPrimaryKeyValue.toString())
             .update(entity) > 0;
+        // 成功更新后,刷新自身属性
+        if (success)
+            selfUpdate(entity, false);
+        // aop通知
         model.updated(this);
+        // 响应
         return success;
+    }
+
+    /**
+     * 更新自身数据
+     */
+    private void selfUpdate(T entity, boolean insertType) {
+        refreshMetadataMap(entity, insertType);
+        this.entity = originalEntity = toObject();
+    }
+
+
+    /**
+     * 更新元数据
+     * @param entity     数据实体
+     * @param insertType 是否为更新操作
+     */
+    private void refreshMetadataMap(T entity, boolean insertType) {
+        for (Field field : entityClass.getDeclaredFields()) {
+            Object value = EntityUtil.fieldGet(field, entity);
+            if (EntityUtil.effectiveField(field, value, insertType)) {
+                String columnName = EntityUtil.columnName(field);
+                if (insertType) {
+                    Column column = new Column();
+                    column.setValue(value);
+                    column.setName(columnName);
+                    metadataMap.put(columnName, column);
+                } else {
+                    metadataMap.get(columnName).setValue(value);
+                }
+            }
+        }
+        hasBind = true;
     }
 
 }

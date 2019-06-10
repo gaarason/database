@@ -104,7 +104,7 @@ public class EntityUtil {
      * @param insertType 是否是新增,会通过字段上的注解column(insertable, updatable)进行忽略
      * @return 有效
      */
-    private static boolean effectiveField(Field field, @Nullable Object value, boolean insertType) {
+    public static boolean effectiveField(Field field, @Nullable Object value, boolean insertType) {
         if (field.isAnnotationPresent(Column.class)) {
             Column column = field.getAnnotation(Column.class);
             // 注解中已经标记不可新增或者更新
@@ -124,7 +124,7 @@ public class EntityUtil {
      * @return 值
      */
     @Nullable
-    private static Object fieldGet(Field field, Object obj) {
+    public static Object fieldGet(Field field, Object obj) {
         try {
             field.setAccessible(true); // 设置些属性是可以访问的
             return field.get(obj);

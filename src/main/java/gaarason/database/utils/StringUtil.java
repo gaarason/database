@@ -4,12 +4,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StringUtil {
-    private static Pattern linePattern = Pattern.compile("_(\\w)");
+    final private static Pattern linePattern = Pattern.compile("_(\\w)");
 
-    private static Pattern humpPattern = Pattern.compile("[A-Z]");
+    final private static Pattern humpPattern = Pattern.compile("[A-Z]");
 
     /**
-     * 下划线转驼峰
+     * 下划线转小驼峰
+     * @param str 原字符串
+     * @return 处理后的字符
      */
     public static String lineToHump(String str) {
         str = str.toLowerCase();
@@ -23,7 +25,9 @@ public class StringUtil {
     }
 
     /**
-     * 驼峰转下划线,效率比上面高
+     * 小驼峰转下划线
+     * @param str 原字符串
+     * @return 处理后的字符
      */
     public static String humpToLine(String str) {
         Matcher      matcher = humpPattern.matcher(str);
@@ -32,6 +36,31 @@ public class StringUtil {
             matcher.appendReplacement(sb, "_" + matcher.group(0).toLowerCase());
         }
         matcher.appendTail(sb);
-        return sb.toString();
+        return ltrim(sb.toString(), "_");
+    }
+
+    /**
+     * 移除字符串左侧的所有character
+     * @param str       原字符串
+     * @param character 将要移除的字符
+     * @return 处理后的字符
+     */
+    public static String ltrim(String str, String character) {
+        if (str.equals(""))
+            return str;
+        return str.substring(0, 1).equals(character) ? ltrim(str.substring(1), character) : str;
+    }
+
+    /**
+     * 移除字符串右侧的所有character
+     * @param str       原字符串
+     * @param character 将要移除的字符
+     * @return 处理后的字符
+     */
+    public static String rtrim(String str, String character) {
+        if (str.equals(""))
+            return str;
+        return str.substring(str.length() - 1).equals(character) ? rtrim(str.substring(0, str.length() - 1),
+            character) : str;
     }
 }

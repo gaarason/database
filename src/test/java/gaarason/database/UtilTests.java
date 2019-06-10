@@ -1,6 +1,7 @@
 package gaarason.database;
 
 import gaarason.database.utils.FormatUtil;
+import gaarason.database.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -35,4 +36,19 @@ public class UtilTests {
         Assert.assertEquals(FormatUtil.backQuote("cname aS name"), "`cname` as `name`");
 
     }
+
+    @Test
+    public void humpToLine(){
+        Assert.assertEquals(StringUtil.humpToLine("sddfBdasdView"), "sddf_bdasd_view");
+        Assert.assertEquals(StringUtil.humpToLine("GGddfBdasdView"), "g_gddf_bdasd_view");
+        Assert.assertEquals(StringUtil.humpToLine("123FatherName"), "123_father_name");
+    }
+    @Test
+    public void lineToHump(){
+        Assert.assertEquals(StringUtil.lineToHump("t_invoice"), "tInvoice");
+        Assert.assertEquals(StringUtil.lineToHump("admin"), "admin");
+        Assert.assertEquals(StringUtil.lineToHump("admin123_test"), "admin123Test");
+        Assert.assertEquals(StringUtil.lineToHump("123_222_e"), "123222E");
+    }
+
 }

@@ -35,9 +35,12 @@ public class StudentSingle4Model extends SingleModel<StudentSingle4Model.Entity>
     }
 
     @Override
-    public boolean saving(Record<Entity> entityRecord){
-        System.out.println("正要 保存数据库中, 但是拒绝");
-        return false;
+    public boolean updating(Record<Entity> record){
+        if(record.getEntity().getId() == 9){
+            System.out.println("正要修改id为9的数据, 但是拒绝");
+            return false;
+        }
+        return true;
     }
 
     @Override

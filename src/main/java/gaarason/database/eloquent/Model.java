@@ -7,27 +7,12 @@ import gaarason.database.query.Builder;
 import gaarason.database.query.MySqlBuilder;
 import org.springframework.lang.Nullable;
 
-import java.lang.reflect.ParameterizedType;
-
 abstract public class Model<T> extends InitializeModel<T> {
 
     /**
      * @return dataSource代理
      */
     abstract public ProxyDataSource getProxyDataSource();
-
-    /**
-     * 得到实体类型
-     * @return 实体类型
-     */
-//    private Class<T> entityClass() {
-//        return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
-//    }
-
-//    public Record<T> newRecord() {
-//        return new Record<>(entityClass, this);
-//        return newQuery().
-//    }
 
     /**
      * 事件会在从数据库中获取已存在模型时触发
@@ -119,6 +104,14 @@ abstract public class Model<T> extends InitializeModel<T> {
         // todo 按连接类型,等等信息选择 builder
         ProxyDataSource proxyDataSource = getProxyDataSource();
         return new MySqlBuilder<>(proxyDataSource, this, entityClass);
+    }
+
+    /**
+     * 新的记录对象
+     * @return 记录对象
+     */
+    public Record<T> newRecord(){
+        return new Record<>(entityClass, this);
     }
 
     public RecordList<T> all(String... column) throws SQLRuntimeException {
