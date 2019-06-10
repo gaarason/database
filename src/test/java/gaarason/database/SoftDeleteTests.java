@@ -1,9 +1,7 @@
 package gaarason.database;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gaarason.database.eloquent.Record;
 import gaarason.database.eloquent.RecordList;
-import gaarason.database.models.StudentSingle4Model;
 import gaarason.database.models.StudentSingle5Model;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
@@ -24,7 +22,7 @@ public class SoftDeleteTests extends DatabaseApplicationTests {
     StudentSingle5Model studentModel;
 
     @Test
-    public void 软删除() {
+    public void 软删除与恢复() {
         int id = studentModel.newQuery().where("id", "5").delete();
         Assert.assertEquals(id, 1);
 
@@ -34,6 +32,12 @@ public class SoftDeleteTests extends DatabaseApplicationTests {
 
         RecordList<StudentSingle5Model.Entity> records = studentModel.onlyTrashed().get();
         Assert.assertEquals(records.size(), 1);
+
+        int restore = studentModel.onlyTrashed().restore();
+        Assert.assertEquals(restore, 1);
+
+        Record<StudentSingle5Model.Entity> record1 = studentModel.findOrFail("5");
+        Assert.assertFalse(record1.toObject().isDeleted());
     }
 
     @Test
@@ -47,6 +51,4 @@ public class SoftDeleteTests extends DatabaseApplicationTests {
         RecordList<StudentSingle5Model.Entity> records = studentModel.onlyTrashed().get();
         Assert.assertEquals(records.size(), 0);
     }
-
-
 }

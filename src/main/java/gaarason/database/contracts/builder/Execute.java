@@ -29,5 +29,7 @@ public interface Execute<T> {
 
     int delete() throws SQLRuntimeException;
 
+    int restore() throws SQLRuntimeException;
+
     int forceDelete() throws SQLRuntimeException;
 }

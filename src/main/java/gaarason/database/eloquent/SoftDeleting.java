@@ -26,6 +26,15 @@ abstract class SoftDeleting<T> extends Initializing<T> {
     }
 
     /**
+     * 恢复软删除
+     * @param builder 查询构造器
+     * @return 删除的行数
+     */
+    public int restore(Builder<T> builder) {
+        return softDeleteRestore(builder);
+    }
+
+    /**
      * 软删除查询作用域(反)
      * @param builder 查询构造器
      */
@@ -57,5 +66,14 @@ abstract class SoftDeleting<T> extends Initializing<T> {
      */
     protected int softDelete(Builder<T> builder) {
         return builder.data("is_deleted", "1").update();
+    }
+
+    /**
+     * 恢复软删除实现
+     * @param builder 查询构造器
+     * @return 恢复的行数
+     */
+    protected int softDeleteRestore(Builder<T> builder) {
+        return builder.data("is_deleted", "0").update();
     }
 }

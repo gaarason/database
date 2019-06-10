@@ -214,7 +214,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         int id = student5Model.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
-        Record<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
+        Record<StudentSingle5Model.Entity> id1 = student5Model.newQuery().where("id", "3").first();
         Assert.assertNull(id1);
 
         // 强行查询所有

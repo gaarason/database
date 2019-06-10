@@ -157,6 +157,16 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     }
 
     /**
+     * 恢复软删除模型
+     * @return 受影响的行数
+     * @throws SQLRuntimeException sql异常
+     */
+    @Override
+    public int restore() throws SQLRuntimeException{
+        return model.restore(this);
+    }
+
+    /**
      * 删除
      * @return 受影响的行数
      * @throws SQLRuntimeException sql异常
