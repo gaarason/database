@@ -39,6 +39,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     StudentSingle3Model student3Model;
 
     @Autowired
+    StudentSingle5Model student5Model;
+
+    @Autowired
     TeacherModel teacherModel;
 
     @Test
@@ -195,7 +198,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 删除_硬() {
-        int id = studentModel.newQuery().where("id", "3").delete();
+        int id = student5Model.newQuery().where("id", "3").forceDelete();
         Assert.assertEquals(id, 1);
 
         Record<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
@@ -208,11 +211,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 删除_软() {
-        int id = studentModel.newQuery().where("id", "3").delete();
+        int id = student5Model.newQuery().where("id", "3").delete();
         Assert.assertEquals(id, 1);
 
         Record<StudentSingleModel.Entity> id1 = studentModel.newQuery().where("id", "3").first();
         Assert.assertNull(id1);
+
+        // 强行查询所有
+
     }
 
     @Test

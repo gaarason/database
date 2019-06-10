@@ -320,11 +320,6 @@ public class MySqlBuilder<T> extends Builder<T> {
         return update();
     }
 
-    @Override
-    public int delete() throws SQLRuntimeException {
-        return updateSql(SqlType.DELETE);
-    }
-
     /**
      * 格式化参数类型,到绑定参数
      * @param value 参数
@@ -356,7 +351,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     public Builder<T> value(List<String> valueList) {
         StringBuilder sqlPartBuilder = new StringBuilder("(");
         for (String value : valueList) {
-            String stub = FormatUtil.value(value, grammar);
+            String stub = FormatUtil.data(value, grammar);
             sqlPartBuilder.append(stub).append(',');
         }
         String sqlPart = sqlPartBuilder.deleteCharAt(sqlPartBuilder.length() - 1).append(')').toString();

@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 
-abstract class InitializeModel<T> {
+abstract class Initializing<T> {
 
     /**
      * 主键列名(并非一定是实体的属性名)
@@ -23,9 +23,9 @@ abstract class InitializeModel<T> {
     /**
      * 实体类型
      */
-    Class<T> entityClass;
+    protected Class<T> entityClass;
 
-    InitializeModel() {
+    Initializing() {
         entityClass = entityClass();
         analysisEntityClass();
     }

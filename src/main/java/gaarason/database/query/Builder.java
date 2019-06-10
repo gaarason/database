@@ -111,7 +111,6 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     @Override
     public void commit() throws SQLRuntimeException {
         try {
-//            Connection localThreadConnection = getLocalThreadConnection();
             getLocalThreadConnection().commit();
             getLocalThreadConnection().close();
         } catch (SQLException e) {
@@ -127,7 +126,6 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
         try {
             getLocalThreadConnection().rollback();
             getLocalThreadConnection().close();
-//            dataSource.setInTransaction(false);
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
@@ -156,6 +154,26 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
             }
         }
         return false;
+    }
+
+    /**
+     * 删除
+     * @return 受影响的行数
+     * @throws SQLRuntimeException sql异常
+     */
+    @Override
+    public int delete() throws SQLRuntimeException {
+        return model.delete(this);
+    }
+
+    /**
+     * 绝对真删除
+     * @return 受影响的行数
+     * @throws SQLRuntimeException sql异常
+     */
+    @Override
+    public int forceDelete() throws SQLRuntimeException {
+        return updateSql(SqlType.DELETE);
     }
 
     /**
@@ -261,7 +279,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
     private PreparedStatement executeSql(Connection connection, SqlType sqlType) throws SQLException {
         // sql组装执行
         String       sql           = grammar.generateSql(sqlType);
-        List<String> parameterList = grammar.getParameterList();
+        List<String> parameterList = grammar.getParameterList(sqlType);
         // 日志记录
         log(sql, parameterList);
         // 预执行
@@ -283,7 +301,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      */
     private String generateSql(GenerateSqlPart<T> closure, boolean wholeSql) {
         Builder<T>   subBuilder    = closure.generate(getNewSelf());
-        List<String> parameterList = subBuilder.grammar.getParameterList();
+        List<String> parameterList = subBuilder.grammar.getParameterList(SqlType.SUBQUERY);
         for (String parameter : parameterList) {
             grammar.pushWhereParameter(parameter);
         }
@@ -297,8 +315,8 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @param parameterList 参数
      */
     private static void log(String sql, List<String> parameterList) {
-//        log.debug("SQL with placeholder : {}", sql);
-//        log.debug("SQL parameterList    : {}", parameterList);
+        log.debug("SQL with placeholder : {}", sql);
+        log.debug("SQL parameterList    : {}", parameterList);
         String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
         log.debug("SQL complete         : {}", format);
     }

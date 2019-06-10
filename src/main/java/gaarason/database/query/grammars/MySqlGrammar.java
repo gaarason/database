@@ -172,8 +172,7 @@ public class MySqlGrammar implements Grammar {
                 sql = "update " + dealFrom() + " set" + dealData();
                 break;
             case INSERT:
-                sql = "insert into " + dealFrom() + dealColumn() + " values" + dealValue();
-                break;
+                return "insert into " + dealFrom() + dealColumn() + " values" + dealValue();
             case DELETE:
                 sql = "delete from " + dealFrom();
                 break;
@@ -193,15 +192,11 @@ public class MySqlGrammar implements Grammar {
     }
 
     @Override
-    public List<String> getParameterList() {
-        dataParameterList.addAll(whereParameterList);
+    public List<String> getParameterList(SqlType sqlType) {
+        if(sqlType != SqlType.INSERT)
+            dataParameterList.addAll(whereParameterList);
         return dataParameterList;
     }
-
-//    @Override
-//    public List<String> getDataParameterList() {
-//        return dataParameterList;
-//    }
 
     @Override
     public boolean hasWhere() {

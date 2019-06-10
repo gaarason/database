@@ -69,6 +69,8 @@ public class Record<T> {
         this.metadataMap = stringColumnMap;
         entity = originalEntity = toObject();
         hasBind = true;
+        // aop通知
+        model.retrieved(this);
     }
 
     /**
@@ -254,7 +256,7 @@ public class Record<T> {
         // 执行
         boolean success = model.newQuery().where(model.PrimaryKeyName, originalPrimaryKeyValue.toString()).delete() > 0;
         // 成功删除后后,刷新自身属性
-        if (success){
+        if (success) {
             this.metadataMap = new HashMap<>();
             entity = originalEntity = toObject();
             hasBind = false;
@@ -317,17 +319,16 @@ public class Record<T> {
      * 更新自身数据
      */
     private void selfUpdate(T entity, boolean insertType) {
-        refreshMetadataMap(entity, insertType);
+        selfUpdateMetadataMap(entity, insertType);
         this.entity = originalEntity = toObject();
     }
-
 
     /**
      * 更新元数据
      * @param entity     数据实体
      * @param insertType 是否为更新操作
      */
-    private void refreshMetadataMap(T entity, boolean insertType) {
+    private void selfUpdateMetadataMap(T entity, boolean insertType) {
         for (Field field : entityClass.getDeclaredFields()) {
             Object value = EntityUtil.fieldGet(field, entity);
             if (EntityUtil.effectiveField(field, value, insertType)) {

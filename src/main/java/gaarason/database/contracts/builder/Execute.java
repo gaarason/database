@@ -29,4 +29,5 @@ public interface Execute<T> {
 
     int delete() throws SQLRuntimeException;
 
+    int forceDelete() throws SQLRuntimeException;
 }

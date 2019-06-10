@@ -30,7 +30,7 @@ public interface Grammar {
 
     void pushDataParameter(String value);
 
-    List<String> getParameterList();
+    List<String> getParameterList(SqlType sqlType);
 
 //    List<String> getDataParameterList();
 
