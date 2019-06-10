@@ -66,11 +66,7 @@ public class Record<T> {
     public Record(Class<T> entityClass, Model<T> model, Map<String, Column> stringColumnMap) {
         this.entityClass = entityClass;
         this.model = model;
-        this.metadataMap = stringColumnMap;
-        entity = originalEntity = toObject();
-        hasBind = true;
-        // aop通知
-        model.retrieved(this);
+        init(stringColumnMap);
     }
 
     /**
@@ -80,9 +76,27 @@ public class Record<T> {
     public Record(Class<T> entityClass, Model<T> model) {
         this.entityClass = entityClass;
         this.model = model;
-        this.metadataMap = new HashMap<>();
+        init(new HashMap<>());
+//        this.metadataMap = new HashMap<>();
+//        entity = originalEntity = toObject();
+//        hasBind = false;
+    }
+
+    /**
+     * 初始化数据
+     * @param stringColumnMap 元数据
+     */
+    private void init(Map<String, Column> stringColumnMap) {
+        this.metadataMap = stringColumnMap;
         entity = originalEntity = toObject();
-        hasBind = false;
+        if (!stringColumnMap.isEmpty()) {
+            hasBind = true;
+            // aop通知
+            model.retrieved(this);
+        } else {
+            hasBind = false;
+        }
+
     }
 
     /**
@@ -260,11 +274,55 @@ public class Record<T> {
             this.metadataMap = new HashMap<>();
             entity = originalEntity = toObject();
             hasBind = false;
+            // aop通知
+            model.deleted(this);
         }
-        // aop通知
-        model.deleted(this);
         // 响应
         return success;
+    }
+
+    /**
+     * 恢复
+     * restoring -> restored
+     * @return 执行成功
+     */
+    public boolean restore() {
+        // 主键未知
+        if (originalPrimaryKeyValue == null) {
+            throw new PrimaryKeyNotFoundException();
+        }
+        // aop阻止
+        if (!model.restoring(this)) {
+            return false;
+        }
+        // 执行
+        boolean success = model.onlyTrashed()
+            .where(model.PrimaryKeyName, originalPrimaryKeyValue.toString())
+            .restore() > 0;
+        // 成功恢复后,刷新自身属性
+        if (success) {
+            refresh();
+        }
+        // 响应
+        return success;
+    }
+
+    /**
+     * 刷新(重新从数据库获取)
+     * retrieved
+     * @return 执行成功
+     */
+    public Record<T> refresh() {
+        // 主键未知
+        if (originalPrimaryKeyValue == null) {
+            throw new PrimaryKeyNotFoundException();
+        }
+        // 刷新自身属性
+        init(model.withTrashed()
+            .where(model.PrimaryKeyName, originalPrimaryKeyValue.toString())
+            .firstOrFail().metadataMap);
+        // 响应
+        return this;
     }
 
     /**
@@ -280,10 +338,11 @@ public class Record<T> {
         // 执行
         boolean success = model.newQuery().insert(entity) > 0;
         // 成功插入后后,刷新自身属性
-        if (success)
+        if (success) {
             selfUpdate(entity, true);
-        // aop通知
-        model.created(this);
+            // aop通知
+            model.created(this);
+        }
         // 响应
         return success;
     }
@@ -307,10 +366,11 @@ public class Record<T> {
             .where(model.PrimaryKeyName, originalPrimaryKeyValue.toString())
             .update(entity) > 0;
         // 成功更新后,刷新自身属性
-        if (success)
+        if (success) {
             selfUpdate(entity, false);
-        // aop通知
-        model.updated(this);
+            // aop通知
+            model.updated(this);
+        }
         // 响应
         return success;
     }

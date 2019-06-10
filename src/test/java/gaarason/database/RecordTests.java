@@ -20,6 +20,8 @@ public class RecordTests extends DatabaseApplicationTests {
 
     @Autowired
     StudentSingle4Model studentModel;
+    @Autowired
+    StudentSingle5Model student5Model;
 
     @Test
     public void ORM查询() {
@@ -113,6 +115,26 @@ public class RecordTests extends DatabaseApplicationTests {
         // 用查询构造器验证
         StudentSingle4Model.Entity e = studentModel.newQuery().where("id", "6").firstOrFail().toObject();
         System.out.println(e);
+
+    }
+
+    @Test
+    public void ORM软删除与恢复(){
+        Record<StudentSingle5Model.Entity> record = student5Model.findOrFail("6");
+
+        boolean delete = record.delete();
+        Assert.assertTrue(delete);
+
+        Record<StudentSingle5Model.Entity> record1 = student5Model.find("6");
+        Assert.assertNull(record1);
+
+        boolean restore = record.restore();
+        Assert.assertTrue(restore);
+        Assert.assertFalse(record.toObject().isDeleted());
+
+        int size = student5Model.onlyTrashed().get().toObjectList().size();
+        Assert.assertEquals(size , 0);
+
 
     }
 

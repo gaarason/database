@@ -159,6 +159,8 @@ public class EntityUtil {
         if (value instanceof Date) {
             SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             return formatter.format(value);
+        } else if (value instanceof Boolean) {
+            return (Boolean) value ? "1" : "0";
         } else
             return value == null ? null : value.toString();
     }
