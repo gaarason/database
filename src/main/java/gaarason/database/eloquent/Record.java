@@ -77,9 +77,6 @@ public class Record<T> {
         this.entityClass = entityClass;
         this.model = model;
         init(new HashMap<>());
-//        this.metadataMap = new HashMap<>();
-//        entity = originalEntity = toObject();
-//        hasBind = false;
     }
 
     /**
@@ -282,11 +279,20 @@ public class Record<T> {
     }
 
     /**
-     * 恢复
+     * 恢复(成功恢复后将会刷新record)
      * restoring -> restored
      * @return 执行成功
      */
     public boolean restore() {
+        return restore(true);
+    }
+
+    /**
+     * 恢复
+     * restoring -> restored
+     * @return 执行成功
+     */
+    public boolean restore(boolean refresh) {
         // 主键未知
         if (originalPrimaryKeyValue == null) {
             throw new PrimaryKeyNotFoundException();
@@ -300,7 +306,7 @@ public class Record<T> {
             .where(model.PrimaryKeyName, originalPrimaryKeyValue.toString())
             .restore() > 0;
         // 成功恢复后,刷新自身属性
-        if (success) {
+        if (success && refresh) {
             refresh();
         }
         // 响应

@@ -1,17 +1,13 @@
 package gaarason.database.query;
 
 import gaarason.database.connections.ProxyDataSource;
+import gaarason.database.contracts.builder.OrderBy;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.*;
-import gaarason.database.eloquent.Model;
-import gaarason.database.eloquent.Record;
-import gaarason.database.eloquent.RecordList;
-import gaarason.database.eloquent.SqlType;
-import gaarason.database.exception.ConfirmOperationException;
-import gaarason.database.exception.EntityNotFoundException;
-import gaarason.database.exception.NestedTransactionException;
-import gaarason.database.exception.SQLRuntimeException;
+import gaarason.database.eloquent.*;
+import gaarason.database.exception.*;
+import gaarason.database.query.grammars.MySqlGrammar;
 import gaarason.database.support.RecordFactory;
 import gaarason.database.utils.ExceptionUtil;
 import gaarason.database.utils.FormatUtil;
@@ -27,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
-    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T> {
+abstract public class Builder<T> implements Cloneable, Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
+    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T> {
 
     /**
      * 数据实体类
@@ -92,6 +88,31 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @return 数据库语句组装对象
      */
     abstract Grammar grammarFactory();
+
+    @Override
+    public Paginate<T> paginate(int currentPage, int perPage)
+        throws SQLRuntimeException, CloneNotSupportedRuntimeException {
+        Long count = clone().count("*");
+        List<T> list = limit((currentPage - 1) * perPage, perPage).get().toObjectList();
+        return new Paginate<>(list, currentPage, perPage, count.intValue());
+    }
+
+    @Override
+    public Builder clone() throws CloneNotSupportedRuntimeException {
+        try {
+            Builder builder = (Builder) super.clone();
+            builder.grammar = grammar.clone();
+            return builder;
+        } catch (CloneNotSupportedException e) {
+            throw new CloneNotSupportedRuntimeException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Paginate<T> simplePaginate(int currentPage, int perPage) throws SQLRuntimeException {
+        List<T> list = limit((currentPage - 1) * perPage, perPage).get().toObjectList();
+        return new Paginate<>(list, currentPage, perPage);
+    }
 
     @Override
     public void begin() throws SQLRuntimeException, NestedTransactionException {
@@ -162,7 +183,7 @@ abstract public class Builder<T> implements Where<T>, Union<T>, Support<T>, From
      * @throws SQLRuntimeException sql异常
      */
     @Override
-    public int restore() throws SQLRuntimeException{
+    public int restore() throws SQLRuntimeException {
         return model.restore(this);
     }
 

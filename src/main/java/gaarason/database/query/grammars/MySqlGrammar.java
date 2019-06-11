@@ -2,8 +2,11 @@ package gaarason.database.query.grammars;
 
 import gaarason.database.contracts.Grammar;
 import gaarason.database.eloquent.SqlType;
+import gaarason.database.exception.CloneNotSupportedRuntimeException;
 import gaarason.database.exception.InvalidSQLTypeException;
+import gaarason.database.query.Builder;
 import gaarason.database.utils.FormatUtil;
+import org.springframework.lang.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,7 @@ public class MySqlGrammar implements Grammar {
 
     private String where;
 
+    @Nullable
     private String orderBy;
 
     private String group;
@@ -116,7 +120,7 @@ public class MySqlGrammar implements Grammar {
         return null == from ? dealTable() : from;
     }
 
-    private String dealTable(){
+    private String dealTable() {
         return FormatUtil.backQuote(table);
     }
 
@@ -165,14 +169,14 @@ public class MySqlGrammar implements Grammar {
     public String generateSql(SqlType sqlType) {
         String sql;
         switch (sqlType) {
+            case INSERT:
+                return "insert into " + dealFrom() + dealColumn() + " values" + dealValue();
             case SELECT:
                 sql = "select " + dealSelect() + dealFromSelect();
                 break;
             case UPDATE:
                 sql = "update " + dealFrom() + " set" + dealData();
                 break;
-            case INSERT:
-                return "insert into " + dealFrom() + dealColumn() + " values" + dealValue();
             case DELETE:
                 sql = "delete from " + dealFrom();
                 break;
@@ -193,7 +197,7 @@ public class MySqlGrammar implements Grammar {
 
     @Override
     public List<String> getParameterList(SqlType sqlType) {
-        if(sqlType != SqlType.INSERT)
+        if (sqlType != SqlType.INSERT)
             dataParameterList.addAll(whereParameterList);
         return dataParameterList;
     }
@@ -204,6 +208,11 @@ public class MySqlGrammar implements Grammar {
     }
 
     @Override
+    public void forAggregates() {
+        orderBy = null;
+    }
+
+    @Override
     public void pushWhereParameter(String value) {
         whereParameterList.add(value);
     }
@@ -211,5 +220,14 @@ public class MySqlGrammar implements Grammar {
     @Override
     public void pushDataParameter(String value) {
         dataParameterList.add(value);
+    }
+
+    @Override
+    public MySqlGrammar clone() throws CloneNotSupportedRuntimeException{
+        try {
+            return (MySqlGrammar) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new CloneNotSupportedRuntimeException(e.getMessage(), e);
+        }
     }
 }

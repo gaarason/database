@@ -1,10 +1,12 @@
 package gaarason.database.contracts;
 
 import gaarason.database.eloquent.SqlType;
+import gaarason.database.exception.CloneNotSupportedRuntimeException;
+import gaarason.database.query.grammars.MySqlGrammar;
 
 import java.util.List;
 
-public interface Grammar {
+public interface Grammar extends Cloneable {
 
     void pushSelect(String something);
 
@@ -32,7 +34,12 @@ public interface Grammar {
 
     List<String> getParameterList(SqlType sqlType);
 
-//    List<String> getDataParameterList();
-
     boolean hasWhere();
+
+    /**
+     * 在统计时,需要剔除一些项目,eg: order by
+     */
+    void forAggregates();
+
+    Grammar clone() throws CloneNotSupportedRuntimeException;
 }

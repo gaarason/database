@@ -34,6 +34,7 @@ abstract class Initializing<T> {
      * 得到实体类型
      * @return 实体类型
      */
+    @SuppressWarnings("unchecked")
     private Class<T> entityClass() {
         return (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
     }
