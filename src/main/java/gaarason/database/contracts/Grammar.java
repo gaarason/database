@@ -26,6 +26,8 @@ public interface Grammar extends Cloneable {
 
     void pushValue(String something);
 
+    void pushLock(String something);
+
     String generateSql(SqlType sqlType);
 
     void pushWhereParameter(String value);

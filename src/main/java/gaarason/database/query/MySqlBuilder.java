@@ -435,4 +435,16 @@ public class MySqlBuilder<T> extends Builder<T> {
         Map<String, Object> countMap = selectFunction("sum", column, alias).firstOrFail().toMap();
         return countMap.get(alias).toString();
     }
+
+    @Override
+    public Builder<T> sharedLock() {
+        grammar.pushLock("lock in share mode");
+        return this;
+    }
+
+    @Override
+    public Builder<T> lockForUpdate() {
+        grammar.pushLock("for update");
+        return this;
+    }
 }

@@ -4,7 +4,6 @@ import gaarason.database.contracts.Grammar;
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.CloneNotSupportedRuntimeException;
 import gaarason.database.exception.InvalidSQLTypeException;
-import gaarason.database.query.Builder;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
 
@@ -32,6 +31,8 @@ public class MySqlGrammar implements Grammar {
 
     private String limit;
 
+    private String lock;
+
     private List<String> valueList = new ArrayList<>();
 
     private List<String> whereParameterList = new ArrayList<>();
@@ -55,6 +56,11 @@ public class MySqlGrammar implements Grammar {
     @Override
     public void pushValue(String something) {
         valueList.add(something);
+    }
+
+    @Override
+    public void pushLock(String something) {
+        lock = something;
     }
 
     @Override
@@ -150,7 +156,7 @@ public class MySqlGrammar implements Grammar {
     }
 
     private String dealLock() {
-        return "";
+        return lock == null ? "" : " " + lock;
     }
 
     private String dealValue() {
@@ -223,7 +229,7 @@ public class MySqlGrammar implements Grammar {
     }
 
     @Override
-    public MySqlGrammar clone() throws CloneNotSupportedRuntimeException{
+    public MySqlGrammar clone() throws CloneNotSupportedRuntimeException {
         try {
             return (MySqlGrammar) super.clone();
         } catch (CloneNotSupportedException e) {

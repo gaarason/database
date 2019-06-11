@@ -24,7 +24,7 @@ import java.util.Map;
 
 @Slf4j
 abstract public class Builder<T> implements Cloneable, Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
-    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T> {
+    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T>, Lock<T> {
 
     /**
      * 数据实体类

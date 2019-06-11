@@ -688,6 +688,16 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
+    public void 事物_lock_in_share_mode(){
+
+    }
+
+    @Test
+    public void 事物_for_update(){
+
+    }
+
+    @Test
     public void 安全_更新操作需要确认() {
         int update = studentModel.newQuery().data("name", "xxcc").whereRaw("1").update();
         Assert.assertEquals(update, 10);
