@@ -7,24 +7,26 @@ import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.*;
 import gaarason.database.eloquent.*;
 import gaarason.database.exception.*;
-import gaarason.database.query.grammars.MySqlGrammar;
 import gaarason.database.support.RecordFactory;
 import gaarason.database.utils.ExceptionUtil;
 import gaarason.database.utils.FormatUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 
 import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Slf4j
-abstract public class Builder<T> implements Cloneable, Where<T>, Union<T>, Support<T>, From<T>, Execute<T>, Select<T>,
-    OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T>, Lock<T> {
+abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Union<T>, Support<T>, From<T>, Execute<T>,
+    Select<T>, OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T>,
+    Lock<T>,Native<T> {
 
     /**
      * 数据实体类
@@ -92,8 +94,8 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Union<T>, Suppo
     @Override
     public Paginate<T> paginate(int currentPage, int perPage)
         throws SQLRuntimeException, CloneNotSupportedRuntimeException {
-        Long count = clone().count("*");
-        List<T> list = limit((currentPage - 1) * perPage, perPage).get().toObjectList();
+        Long    count = clone().count("*");
+        List<T> list  = limit((currentPage - 1) * perPage, perPage).get().toObjectList();
         return new Paginate<>(list, currentPage, perPage, count.intValue());
     }
 
@@ -322,6 +324,49 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Union<T>, Suppo
         }
         // 返回预执行对象
         return preparedStatement;
+    }
+
+    @Nullable
+    @Override
+    public Record<T> queryOrFail(String sql, String... parameters) throws SQLRuntimeException, EntityNotFoundException {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Record<T> queryOrFail(String sql, Collection<String> parameters)
+        throws SQLRuntimeException, EntityNotFoundException {
+        return null;
+    }
+
+    @Override
+    public Record<T> query(String sql, String... parameters) throws SQLRuntimeException {
+        return null;
+    }
+
+    @Override
+    public Record<T> query(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        return null;
+    }
+
+    @Override
+    public RecordList<T> queryList(String sql, String... parameters) throws SQLRuntimeException {
+        return null;
+    }
+
+    @Override
+    public RecordList<T> queryList(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        return null;
+    }
+
+    @Override
+    public int execute(String sql, String... parameters) throws SQLRuntimeException {
+        return 0;
+    }
+
+    @Override
+    public int execute(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        return 0;
     }
 
     /**

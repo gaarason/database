@@ -24,6 +24,8 @@ public class MySqlGrammar implements Grammar {
 
     private String where;
 
+    private String having;
+
     @Nullable
     private String orderBy;
 
@@ -50,6 +52,15 @@ public class MySqlGrammar implements Grammar {
             where = something;
         } else {
             where += FormatUtil.spaces(relationship) + something;
+        }
+    }
+
+    @Override
+    public void pushHaving(String something, String relationship) {
+        if (having == null) {
+            having = something;
+        } else {
+            having += FormatUtil.spaces(relationship) + something;
         }
     }
 
@@ -147,8 +158,9 @@ public class MySqlGrammar implements Grammar {
         return null == group ? "" : " group by " + group;
     }
 
-    private String dealHaving() {
-        return "";
+    private String dealHaving(SqlType sqlType) {
+        String havingKeyword = sqlType == SqlType.SUBQUERY ? "" : " having ";
+        return having == null ? "" : havingKeyword + having;
     }
 
     private String dealOrderBy() {
@@ -196,7 +208,7 @@ public class MySqlGrammar implements Grammar {
                 throw new InvalidSQLTypeException();
         }
 
-        sql += dealJoin() + dealWhere(sqlType) + dealGroup() + dealHaving() + dealOrderBy() + dealLimit() + dealLock();
+        sql += dealJoin() + dealWhere(sqlType) + dealGroup() + dealHaving(sqlType) + dealOrderBy() + dealLimit() + dealLock();
 
         return sql;
     }

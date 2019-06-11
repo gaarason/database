@@ -24,6 +24,8 @@ public interface Grammar extends Cloneable {
 
     void pushWhere(String something, String relationship);
 
+    void pushHaving(String something, String relationship);
+
     void pushValue(String something);
 
     void pushLock(String something);

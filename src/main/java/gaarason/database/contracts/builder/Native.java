@@ -1,0 +1,31 @@
+package gaarason.database.contracts.builder;
+
+import gaarason.database.eloquent.Record;
+import gaarason.database.eloquent.RecordList;
+import gaarason.database.exception.EntityNotFoundException;
+import gaarason.database.exception.SQLRuntimeException;
+import org.springframework.lang.Nullable;
+
+import java.util.Collection;
+
+public interface Native<T> {
+
+    @Nullable
+    Record<T> queryOrFail(String sql, String ...parameters) throws SQLRuntimeException,EntityNotFoundException;
+
+    @Nullable
+    Record<T> queryOrFail(String sql, Collection<String> parameters) throws SQLRuntimeException,EntityNotFoundException;
+
+    Record<T> query(String sql, String ...parameters) throws SQLRuntimeException;
+
+    Record<T> query(String sql, Collection<String> parameters) throws SQLRuntimeException;
+
+    RecordList<T> queryList(String sql, String ...parameters) throws SQLRuntimeException;
+
+    RecordList<T> queryList(String sql, Collection<String> parameters) throws SQLRuntimeException;
+
+    int execute(String sql, String ...parameters) throws SQLRuntimeException;
+
+    int execute(String sql, Collection<String> parameters) throws SQLRuntimeException;
+
+}

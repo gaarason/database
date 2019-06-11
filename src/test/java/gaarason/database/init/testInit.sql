@@ -29,7 +29,7 @@ CREATE TABLE `data_type`
   `text`         text                NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8 COMMENT ='test';
+  DEFAULT CHARSET = utf8mb4 COMMENT ='test';
 DROP TABLE IF EXISTS `test`;
 CREATE TABLE `test`
 (
@@ -41,7 +41,7 @@ CREATE TABLE `test`
   `created_at` timestamp           NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '新增时间',
   `updated_at` timestamp           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8 COMMENT ='test';
+  DEFAULT CHARSET = utf8mb4 COMMENT ='test';
 INSERT INTO `test`
 VALUES ('po213jwqb-1', '小明', '16', '2', '数学', '2009-03-14 17:15:23', '2010-04-24 22:11:03');
 INSERT INTO `test`
@@ -59,7 +59,7 @@ CREATE TABLE `relationship_student_teacher`
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 30
-  DEFAULT CHARSET = utf8 COMMENT ='学生表';
+  DEFAULT CHARSET = utf8mb4 COMMENT ='学生表';
 INSERT INTO `relationship_student_teacher`
 VALUES ('1', '1', '1', '2009-03-14 22:15:23', '2009-04-24 22:22:03');
 INSERT INTO `relationship_student_teacher`
@@ -113,7 +113,7 @@ CREATE TABLE `teacher`
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 18
-  DEFAULT CHARSET = utf8 COMMENT ='教师表';
+  DEFAULT CHARSET = utf8mb4 COMMENT ='教师表';
 INSERT INTO `teacher`
 VALUES ('1', '张淑明', '22', '2', '会计', '2009-03-14 20:15:23', '2009-04-24 22:11:03');
 INSERT INTO `teacher`
@@ -136,7 +136,7 @@ CREATE TABLE `student`
   PRIMARY KEY (`id`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 20
-  DEFAULT CHARSET = utf8 COMMENT ='学生表';
+  DEFAULT CHARSET = utf8mb4 COMMENT ='学生表';
 INSERT INTO `student`
 VALUES ('1', '小明', '6', '2', '0', 0, '2009-03-14 17:15:23', '2010-04-24 22:11:03');
 INSERT INTO `student`

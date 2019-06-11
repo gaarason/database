@@ -11,10 +11,7 @@ import gaarason.database.utils.EntityUtil;
 import gaarason.database.utils.FormatUtil;
 import org.springframework.lang.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 public class MySqlBuilder<T> extends Builder<T> {
 
@@ -142,16 +139,139 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> andWhere(GenerateSqlPart<T> Closure) {
-        String sqlPart = generateSqlPart(Closure);
+    public Builder<T> andWhere(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSqlPart(closure);
         grammar.pushWhere(sqlPart, "and");
         return this;
     }
 
     @Override
-    public Builder<T> orWhere(GenerateSqlPart<T> Closure) {
-        String sqlPart = generateSqlPart(Closure);
+    public Builder<T> orWhere(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSqlPart(closure);
         grammar.pushWhere(sqlPart, "or");
+        return this;
+    }
+
+    @Override
+    public Builder<T> havingRaw(String sqlPart) {
+        grammar.pushHaving(sqlPart, "and");
+        return this;
+    }
+
+    @Override
+    public Builder<T> having(String column, String symbol, String value) {
+        String sqlPart = FormatUtil.column(column) + symbol + formatValue(value);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> having(String column, String value) {
+        return having(column, "=", value);
+    }
+
+    @Override
+    public Builder<T> havingIn(String column, List<String> valueList) {
+        String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(formatValue(valueList));
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingInRaw(String column, String sql) {
+        String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(sql);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingIn(String column, GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        return havingInRaw(column, sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNotIn(String column, List<String> valueList) {
+        String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(formatValue(valueList));
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNotInRaw(String column, String sql) {
+        String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(sql);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNotIn(String column, GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        return havingNotInRaw(column, sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingBetween(String column, String min, String max) {
+        String sqlPart = FormatUtil.column(column) + "between" + formatValue(min) + "and" + formatValue(max);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNotBetween(String column, String min, String max) {
+        String sqlPart =
+            FormatUtil.column(column) + "not between" + formatValue(min) + "and" + formatValue(max);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNull(String column) {
+        String sqlPart = FormatUtil.column(column) + "is null";
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingNotNull(String column) {
+        String sqlPart = FormatUtil.column(column) + "is not null";
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingExistsRaw(String sql) {
+        String sqlPart = "exists " + FormatUtil.bracket(sql);
+        return havingRaw(sqlPart);    }
+
+    @Override
+    public Builder<T> havingExists(GenerateSqlPart<T> Closure) {
+        String sql = generateSql(Closure);
+        return havingExistsRaw(sql);
+    }
+
+    @Override
+    public Builder<T> havingNotExistsRaw(String sql) {
+        String sqlPart = "not exists " + FormatUtil.bracket(sql);
+        return havingRaw(sqlPart);    }
+
+    @Override
+    public Builder<T> havingNotExists(GenerateSqlPart<T> Closure) {
+        String sql = generateSql(Closure);
+        return havingNotExistsRaw(sql);    }
+
+    @Override
+    public Builder<T> havingColumn(String column1, String symbol, String column2) {
+        String sqlPart = FormatUtil.column(column1) + symbol + FormatUtil.column(column2);
+        return havingRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> havingColumn(String column1, String column2) {
+        return havingColumn(column1, "=", column2);
+    }
+
+    @Override
+    public Builder<T> andHaving(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSqlPart(closure);
+        grammar.pushHaving(sqlPart, "and");
+        return this;    }
+
+    @Override
+    public Builder<T> orHaving(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSqlPart(closure);
+        grammar.pushHaving(sqlPart, "or");
         return this;
     }
 
@@ -217,7 +337,6 @@ public class MySqlBuilder<T> extends Builder<T> {
         grammar.pushLimit(sqlPart);
         return this;
     }
-
 
     @Override
     public Builder<T> groupRaw(String sqlPart) {

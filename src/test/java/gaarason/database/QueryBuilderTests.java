@@ -564,6 +564,177 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         System.out.println(entities1);
     }
 
+
+    @Test
+    public void 筛选_字段之间比较() {
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
+            .havingColumn("age", ">", "sex").group("age", "sex").select("age", "sex")
+            .get();
+        Assert.assertEquals(records.size(), 5);
+        System.out.println(records);
+        StudentSingleModel.Entity first = records.get(0).toObject();
+        Assert.assertEquals(first.getAge().intValue(), 6);
+        Assert.assertEquals(first.getSex().intValue(), 2);
+
+        RecordList<StudentSingleModel.Entity> records2 = studentModel.newQuery()
+            .havingColumn("age", "<", "sex").group("age", "sex").select("age", "sex")
+            .get();
+        Assert.assertTrue(records2.isEmpty());
+    }
+
+    @Test
+    public void 筛选_having() {
+        Record<StudentSingleModel.Entity> entityRecord =
+            studentModel.newQuery().select("id").group("id").where("id", "<", "3").having("id", ">=", "2").first();
+        Assert.assertNotNull(entityRecord);
+        System.out.println(entityRecord);
+        StudentSingleModel.Entity first = entityRecord.toObject();
+        Assert.assertEquals(first.getId(), new Integer(2));
+    }
+
+    @Test
+    public void 筛选_havingBetween() {
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().group("id")
+            .havingBetween("id", "3", "5").select("id")
+            .get()
+            .toObjectList();
+        Assert.assertEquals(entityList1.size(), 3);
+
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery()
+            .havingBetween("id", "3", "5")
+            .havingNotBetween(
+                "id", "3", "4").select("id").group("id")
+            .get()
+            .toObjectList();
+        Assert.assertEquals(entityList2.size(), 1);
+    }
+
+    @Test
+    public void 筛选_havingIn() {
+        List<String> idList = new ArrayList<>();
+        idList.add("4");
+        idList.add("5");
+        idList.add("6");
+        idList.add("7");
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery()
+            .havingIn("id", idList).group("id").select("id")
+            .get()
+            .toObjectList();
+        Assert.assertEquals(entityList1.size(), 4);
+
+        List<String> idList2 = new ArrayList<>();
+        idList2.add("10");
+        idList2.add("9");
+        idList2.add("7");
+
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().whereIn("id", idList).whereNotIn("id",
+            idList2).get().toObjectList();
+        Assert.assertEquals(entityList2.size(), 3);
+    }
+
+    @Test
+    public void 筛选_havingIn_closure() {
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().havingIn("id",
+            builder -> builder.select("id").where("age", ">=", "11")
+        ).group("id").select("id").get().toObjectList();
+        Assert.assertEquals(entityList1.size(), 9);
+    }
+
+    @Test
+    public void 筛选_havingNull() {
+        List<StudentSingleModel.Entity> entityList1 =
+            studentModel.newQuery().group("id").select("id").havingNotNull("id").get().toObjectList();
+        Assert.assertEquals(entityList1.size(), 10);
+
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery()
+            .group("id")
+            .select("id")
+            .havingNull("id")
+            .get()
+            .toObjectList();
+        Assert.assertEquals(entityList2.size(), 0);
+    }
+
+    @Test
+    public void 筛选_orHaving() {
+        List<StudentSingleModel.Entity> entityList1 =
+            studentModel.newQuery().select("id").group("id").having("id",">", "3").orHaving(
+                (builder) -> builder.havingRaw("id=4")
+            ).get().toObjectList();
+        Assert.assertEquals(entityList1.size(), 7);
+
+        List<StudentSingleModel.Entity> entityList3 =
+            studentModel.newQuery().select("id").group("id").having("id",">", "3").orHaving(
+                (builder) -> builder.having("id", "4")
+            ).get().toObjectList();
+        Assert.assertEquals(entityList3.size(), 7);
+
+        List<StudentSingleModel.Entity> entityList2 =
+            studentModel.newQuery().select("id").group("id","age").having("id", "3").orHaving(
+                (builder) -> builder.havingBetween("id", "4", "10").having("age", ">", "11")
+            ).get().toObjectList();
+        Assert.assertEquals(entityList2.size(), 6);
+    }
+
+    @Test
+    public void 筛选_andHaving() {
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().select("id").group("id").having("id", "3").andHaving(
+            (builder) -> builder.havingRaw("id=4")
+        ).get().toObjectList();
+        Assert.assertEquals(entityList1.size(), 0);
+
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().select("id").group("id","age").having(
+            "id", "7").andHaving(
+            (builder) -> builder.havingBetween("id", "4", "10").having("age", ">", "11")
+        ).get().toObjectList();
+        Assert.assertEquals(entityList2.size(), 1);
+        Assert.assertEquals(entityList2.get(0).getId().intValue(), 7);
+    }
+
+    @Test
+    public void 筛选_andHaving与orHaving无线嵌套() {
+        List<StudentSingleModel.Entity> entityList1 =
+            studentModel.newQuery().select("id").group("id","age","name").having(
+            "id", "3").orHaving(
+            (builder) -> builder.having("age", ">", "11").having("id", "7").andHaving(
+                (builder2) -> builder2.havingBetween("id", "4", "10").having("age", ">", "11")
+            )
+        ).from("student").select("id", "name").get().toObjectList();
+        Assert.assertEquals(entityList1.size(), 2);
+    }
+
+    @Test
+    public void 筛选_exists() {
+        // EXISTS用于检查子查询是否至少会返回一行数据，该子查询实际上并不返回任何数据，而是返回值True或False
+        // EXISTS 指定一个子查询，检测 行 的存在。
+
+        List<StudentSingleModel.Entity> entityList = studentModel.newQuery()
+            .select("id", "name", "age")
+            .group("id","name","age")
+            .havingBetween("id", "1", "2")
+            .havingExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
+            )
+            .havingExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "1", "4")
+            )
+            .get().toObjectList();
+        Assert.assertEquals(entityList.size(), 2);
+
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery()
+            .select("id", "name", "age")
+            .group("id","name","age")
+            .havingBetween("id", "1", "2")
+            .havingExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
+            )
+            .havingNotExists(
+                builder -> builder.select("id", "name", "age").whereBetween("id", "2", "4")
+            )
+            .get().toObjectList();
+        Assert.assertEquals(entityList2.size(), 0);
+    }
+
     @Test
     public void 排序() {
         StudentSingleModel.Entity first = studentModel.newQuery().orderBy("id", OrderBy.DESC).firstOrFail().toObject();
@@ -688,12 +859,12 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 事物_lock_in_share_mode(){
+    public void 事物_lock_in_share_mode() {
 
     }
 
     @Test
-    public void 事物_for_update(){
+    public void 事物_for_update() {
 
     }
 
