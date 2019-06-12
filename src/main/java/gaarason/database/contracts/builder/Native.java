@@ -10,21 +10,13 @@ import java.util.Collection;
 
 public interface Native<T> {
 
-    @Nullable
-    Record<T> queryOrFail(String sql, String ...parameters) throws SQLRuntimeException,EntityNotFoundException;
+    Record<T> queryOrFail(String sql, Collection<String> parameters)
+        throws SQLRuntimeException, EntityNotFoundException;
 
     @Nullable
-    Record<T> queryOrFail(String sql, Collection<String> parameters) throws SQLRuntimeException,EntityNotFoundException;
-
-    Record<T> query(String sql, String ...parameters) throws SQLRuntimeException;
-
     Record<T> query(String sql, Collection<String> parameters) throws SQLRuntimeException;
 
-    RecordList<T> queryList(String sql, String ...parameters) throws SQLRuntimeException;
-
     RecordList<T> queryList(String sql, Collection<String> parameters) throws SQLRuntimeException;
-
-    int execute(String sql, String ...parameters) throws SQLRuntimeException;
 
     int execute(String sql, Collection<String> parameters) throws SQLRuntimeException;
 

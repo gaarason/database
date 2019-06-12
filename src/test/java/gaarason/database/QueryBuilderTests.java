@@ -1007,4 +1007,35 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(paginate4.getTotal().intValue(), 10);
     }
 
+    @Test
+    public void 原生(){
+        Record<StudentSingleModel.Entity> record = studentModel.newQuery()
+            .query("select * from student where id=1", new ArrayList<>());
+        Assert.assertNotNull(record);
+        Assert.assertEquals(record.toObject().getId().intValue(), 1);
+
+        List<String> e = new ArrayList<>();
+        e.add("2");
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
+            .queryList("select * from student where sex=?", e);
+        Assert.assertEquals(records.size(), 4);
+        Assert.assertEquals(records.get(0).toObject().getId().intValue(), 1);
+
+        List<String> e2 = new ArrayList<>();
+        e2.add("134");
+        e2.add("testNAme");
+        e2.add("11");
+        e2.add("1");
+        int execute = studentModel.newQuery()
+            .execute("insert into `student`(`id`,`name`,`age`,`sex`) values( ? , ? , ? , ? )", e2);
+        Assert.assertEquals(execute, 1);
+
+        Record<StudentSingleModel.Entity> query = studentModel.newQuery()
+            .query("select * from student where sex=12", new ArrayList<>());
+        Assert.assertNull(query);
+
+        thrown.expect(EntityNotFoundException.class);
+        studentModel.newQuery().queryOrFail("select * from student where sex=12", new ArrayList<>());
+    }
+
 }

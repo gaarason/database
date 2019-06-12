@@ -209,17 +209,52 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         return updateSql(SqlType.DELETE);
     }
 
-    /**
-     * 执行sql, 处理jdbc结果集, 返回收集器
-     * @return 收集器
-     * @throws SQLRuntimeException     数据库异常
-     * @throws EntityNotFoundException 查询结果为空
-     */
-    Record<T> querySql() throws SQLRuntimeException, EntityNotFoundException {
+    @Override
+    public Record<T> queryOrFail(String sql, Collection<String> parameters)
+        throws SQLRuntimeException, EntityNotFoundException {
         Connection connection = theConnection(false);
         try {
-            ResultSet resultSet = executeSql(connection, SqlType.SELECT).executeQuery();
+            ResultSet resultSet = executeSql(connection, sql, parameters).executeQuery();
             return RecordFactory.newRecord(entityClass, model, resultSet);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction()) {
+                connectionClose(connection);
+            }
+        }
+    }
+
+    @Nullable
+    @Override
+    public Record<T> query(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        try {
+            return queryOrFail(sql, parameters);
+        } catch (EntityNotFoundException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public RecordList<T> queryList(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        Connection connection = theConnection(false);
+        try {
+            ResultSet resultSet = executeSql(connection, sql, parameters).executeQuery();
+            return RecordFactory.newRecordList(entityClass, model, resultSet);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction()) {
+                connectionClose(connection);
+            }
+        }
+    }
+
+    @Override
+    public int execute(String sql, Collection<String> parameters) throws SQLRuntimeException {
+        Connection connection = theConnection(true);
+        try {
+            return executeSql(connection, sql,parameters).executeUpdate();
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
@@ -235,18 +270,24 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
      * @throws SQLRuntimeException     数据库异常
      * @throws EntityNotFoundException 查询结果为空
      */
+    Record<T> querySql() throws SQLRuntimeException, EntityNotFoundException {
+        // sql组装执行
+        String       sql           = grammar.generateSql(SqlType.SELECT);
+        List<String> parameterList = grammar.getParameterList(SqlType.SELECT);
+        return queryOrFail(sql, parameterList);
+    }
+
+    /**
+     * 执行sql, 处理jdbc结果集, 返回收集器
+     * @return 收集器
+     * @throws SQLRuntimeException     数据库异常
+     * @throws EntityNotFoundException 查询结果为空
+     */
     RecordList<T> querySqlList() throws SQLRuntimeException, EntityNotFoundException {
-        Connection connection = theConnection(false);
-        try {
-            ResultSet resultSet = executeSql(connection, SqlType.SELECT).executeQuery();
-            return RecordFactory.newRecordList(entityClass, model, resultSet);
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
-        } finally {
-            if (!inTransaction()) {
-                connectionClose(connection);
-            }
-        }
+        // sql组装执行
+        String       sql           = grammar.generateSql(SqlType.SELECT);
+        List<String> parameterList = grammar.getParameterList(SqlType.SELECT);
+        return queryList(sql, parameterList);
     }
 
     /**
@@ -258,16 +299,10 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         if (sqlType != SqlType.INSERT && !grammar.hasWhere())
             throw new ConfirmOperationException("You made a risky operation without where conditions, use where(1) " +
                 "for sure");
-        Connection connection = theConnection(true);
-        try {
-            return executeSql(connection, sqlType).executeUpdate();
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
-        } finally {
-            if (!inTransaction()) {
-                connectionClose(connection);
-            }
-        }
+        // sql组装执行
+        String       sql           = grammar.generateSql(sqlType);
+        List<String> parameterList = grammar.getParameterList(sqlType);
+        return execute(sql, parameterList);
     }
 
     /**
@@ -305,16 +340,14 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
     /**
      * 执行sql
      * @param connection 数据库连接
-     * @param sqlType    sql类型
+     * @param sql 查询语句
+     * @param parameterList 参数绑定
      * @return 预执行对象
      * @throws SQLException sql错误
      */
-    private PreparedStatement executeSql(Connection connection, SqlType sqlType) throws SQLException {
-        // sql组装执行
-        String       sql           = grammar.generateSql(sqlType);
-        List<String> parameterList = grammar.getParameterList(sqlType);
+    private PreparedStatement executeSql(Connection connection, String sql, Collection<String> parameterList) throws SQLException {
         // 日志记录
-        log(sql, parameterList);
+        model.log(sql, parameterList);
         // 预执行
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         // 参数绑定
@@ -324,49 +357,6 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         }
         // 返回预执行对象
         return preparedStatement;
-    }
-
-    @Nullable
-    @Override
-    public Record<T> queryOrFail(String sql, String... parameters) throws SQLRuntimeException, EntityNotFoundException {
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public Record<T> queryOrFail(String sql, Collection<String> parameters)
-        throws SQLRuntimeException, EntityNotFoundException {
-        return null;
-    }
-
-    @Override
-    public Record<T> query(String sql, String... parameters) throws SQLRuntimeException {
-        return null;
-    }
-
-    @Override
-    public Record<T> query(String sql, Collection<String> parameters) throws SQLRuntimeException {
-        return null;
-    }
-
-    @Override
-    public RecordList<T> queryList(String sql, String... parameters) throws SQLRuntimeException {
-        return null;
-    }
-
-    @Override
-    public RecordList<T> queryList(String sql, Collection<String> parameters) throws SQLRuntimeException {
-        return null;
-    }
-
-    @Override
-    public int execute(String sql, String... parameters) throws SQLRuntimeException {
-        return 0;
-    }
-
-    @Override
-    public int execute(String sql, Collection<String> parameters) throws SQLRuntimeException {
-        return 0;
     }
 
     /**
@@ -383,18 +373,6 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         }
         SqlType sqlType = wholeSql ? SqlType.SELECT : SqlType.SUBQUERY;
         return FormatUtil.bracket(subBuilder.grammar.generateSql(sqlType));
-    }
-
-    /**
-     * sql日志记录
-     * @param sql           带占位符的sql
-     * @param parameterList 参数
-     */
-    private static void log(String sql, List<String> parameterList) {
-        log.debug("SQL with placeholder : {}", sql);
-        log.debug("SQL parameterList    : {}", parameterList);
-        String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
-        log.debug("SQL complete         : {}", format);
     }
 
     /**

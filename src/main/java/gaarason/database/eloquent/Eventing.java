@@ -1,6 +1,23 @@
 package gaarason.database.eloquent;
 
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collection;
+
+@Slf4j
 abstract class Eventing<T> extends SoftDeleting<T> {
+
+    /**
+     * sql日志记录
+     * @param sql           带占位符的sql
+     * @param parameterList 参数
+     */
+    public void log(String sql, Collection<String> parameterList) {
+        log.debug("SQL with placeholder : {}", sql);
+        log.debug("SQL parameterList    : {}", parameterList);
+        String format = String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
+        log.debug("SQL complete         : {}", format);
+    }
 
     /**
      * 事件会在从数据库中获取已存在模型时触发
