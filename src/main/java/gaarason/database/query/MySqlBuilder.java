@@ -233,7 +233,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public Builder<T> havingExistsRaw(String sql) {
         String sqlPart = "exists " + FormatUtil.bracket(sql);
-        return havingRaw(sqlPart);    }
+        return havingRaw(sqlPart);
+    }
 
     @Override
     public Builder<T> havingExists(GenerateSqlPart<T> Closure) {
@@ -244,12 +245,14 @@ public class MySqlBuilder<T> extends Builder<T> {
     @Override
     public Builder<T> havingNotExistsRaw(String sql) {
         String sqlPart = "not exists " + FormatUtil.bracket(sql);
-        return havingRaw(sqlPart);    }
+        return havingRaw(sqlPart);
+    }
 
     @Override
     public Builder<T> havingNotExists(GenerateSqlPart<T> Closure) {
         String sql = generateSql(Closure);
-        return havingNotExistsRaw(sql);    }
+        return havingNotExistsRaw(sql);
+    }
 
     @Override
     public Builder<T> havingColumn(String column1, String symbol, String column2) {
@@ -266,7 +269,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     public Builder<T> andHaving(GenerateSqlPart<T> closure) {
         String sqlPart = generateSqlPart(closure);
         grammar.pushHaving(sqlPart, "and");
-        return this;    }
+        return this;
+    }
 
     @Override
     public Builder<T> orHaving(GenerateSqlPart<T> closure) {
@@ -314,7 +318,7 @@ public class MySqlBuilder<T> extends Builder<T> {
 
     @Override
     public Builder<T> orderBy(String column, OrderBy type) {
-        String sqlPart = FormatUtil.column(column) + " " + (type == OrderBy.ASC ? "asc" : "desc");
+        String sqlPart = FormatUtil.column(column) + " " + type.getOperation();
         grammar.pushOrderBy(sqlPart);
         return this;
     }
@@ -578,6 +582,21 @@ public class MySqlBuilder<T> extends Builder<T> {
     public Builder<T> unionAll(GenerateSqlPart<T> closure) {
         String sqlPart = generateSql(closure);
         grammar.pushUnion(sqlPart, "union all");
+        return this;
+    }
+
+    @Override
+    public Builder<T> join(String table, String column1, String symbol, String column2) {
+        return join(JoinType.INNER, table, column1, symbol, column2);
+    }
+
+    @Override
+    public Builder<T> join(JoinType joinType, String table, String column1, String symbol, String column2) {
+        String sqlPart =
+            FormatUtil.spaces(joinType.getOperation()) + "join " + FormatUtil.backQuote(table) + FormatUtil.spaces(
+                "on") +
+                FormatUtil.column(column1) + symbol + FormatUtil.column(column2);
+        grammar.pushJoin(sqlPart);
         return this;
     }
 }

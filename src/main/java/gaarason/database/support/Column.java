@@ -40,7 +40,10 @@ public class Column {
 
     private int displaySize;
 
-    private String label;
+    /**
+     * 原列名
+     */
+    private String columnName;
 
     private String schemaName;
 

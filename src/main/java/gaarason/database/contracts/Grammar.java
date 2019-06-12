@@ -21,6 +21,8 @@ public interface Grammar extends Cloneable {
 
     void pushColumn(String something);
 
+    void pushJoin(String something);
+
     void pushWhere(String something, String relationship);
 
     void pushHaving(String something, String relationship);

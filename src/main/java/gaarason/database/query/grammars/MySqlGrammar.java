@@ -35,6 +35,8 @@ public class MySqlGrammar implements Grammar {
 
     private String lock;
 
+    private String join;
+
     private String union;
 
     private List<String> valueList = new ArrayList<>();
@@ -124,6 +126,15 @@ public class MySqlGrammar implements Grammar {
     }
 
     @Override
+    public void pushJoin(String something) {
+        if (join == null) {
+            join = something;
+        } else {
+            join += something;
+        }
+    }
+
+    @Override
     public void pushUnion(String something, String unionType) {
         if(union == null){
             union = " " + unionType + FormatUtil.bracket(something);
@@ -162,7 +173,7 @@ public class MySqlGrammar implements Grammar {
     }
 
     private String dealJoin() {
-        return "";
+        return null == join ? "" : join;
     }
 
     private String dealGroup() {

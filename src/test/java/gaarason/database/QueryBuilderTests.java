@@ -9,7 +9,6 @@ import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.models.*;
-import gaarason.database.query.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -78,8 +77,8 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         entity.setAge(Byte.valueOf("13"));
         entity.setSex(Byte.valueOf("1"));
         entity.setTeacherId(0);
-        entity.setCreatedAt(new Date());
-        entity.setUpdatedAt(new Date());
+        entity.setCreatedAt(new Date(1312312312));
+        entity.setUpdatedAt(new Date(1312312312));
         int insert = studentModel.newQuery().insert(entity);
         Assert.assertEquals(insert, 1);
 
@@ -734,6 +733,15 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             )
             .get().toObjectList();
         Assert.assertEquals(entityList2.size(), 0);
+    }
+
+    @Test
+    public void join(){
+        RecordList<StudentSingleModel.Entity> student_as_t = studentModel.newQuery()
+            .select("student.*","t.age as age2")
+            .join("student as t", "student.id", "=", "t.age")
+            .get();
+        System.out.println(student_as_t.toMapList());
     }
 
     @Test

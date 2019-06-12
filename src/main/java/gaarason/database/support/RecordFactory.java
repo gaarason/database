@@ -38,7 +38,7 @@ public class RecordFactory {
         final int           columnCountMoreOne = resultSetMetaData.getColumnCount() + 1;
         for (int i = 1; i < columnCountMoreOne; i++) {
             Column column = new Column();
-            column.setName(resultSetMetaData.getColumnName(i));
+            column.setName(resultSetMetaData.getColumnLabel(i));
             column.setValue(resultSet.getObject(column.getName()));
             column.setType(resultSetMetaData.getColumnType(i));
             column.setTypeName(resultSetMetaData.getColumnTypeName(i));
@@ -46,7 +46,7 @@ public class RecordFactory {
             column.setCatalogName(resultSetMetaData.getCatalogName(i));
             column.setClassName(resultSetMetaData.getColumnClassName(i));
             column.setDisplaySize(resultSetMetaData.getColumnDisplaySize(i));
-            column.setLabel(resultSetMetaData.getColumnLabel(i));
+            column.setColumnName(resultSetMetaData.getColumnName(i));
             column.setSchemaName(resultSetMetaData.getSchemaName(i));
             column.setPrecision(resultSetMetaData.getPrecision(i));
             column.setScale(resultSetMetaData.getScale(i));

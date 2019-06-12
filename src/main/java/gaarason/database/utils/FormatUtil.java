@@ -12,7 +12,7 @@ public class FormatUtil {
      * @param something 字段 eg: sum(order.amount) AS sum_price
      * @return eg: sum(`order`.`amount`) AS `sum_price`
      */
-    public static String column(String something){
+    public static String column(String something) {
         return backQuote(something);
     }
 
@@ -21,7 +21,7 @@ public class FormatUtil {
      * @param something 别名 eg: alice
      * @return eg: 'alice'
      */
-    public static String quotes(String something){
+    public static String quotes(String something) {
         return '\'' + something.trim() + '\'';
     }
 
@@ -30,7 +30,7 @@ public class FormatUtil {
      * @param somethingList eg:[name,age,sex]
      * @return eg: `name`,`age`,`sex`
      */
-    public static String column(List<String> somethingList){
+    public static String column(List<String> somethingList) {
         StringBuilder StringBuilder = new StringBuilder();
         for (String value : somethingList) {
             StringBuilder.append(FormatUtil.column(value)).append(',');
@@ -63,7 +63,7 @@ public class FormatUtil {
      * @param somethingList eg:[1,2,3]
      * @return eg: ? , ? , ?
      */
-    public static String value(List<String> somethingList, Grammar grammar){
+    public static String value(List<String> somethingList, Grammar grammar) {
         StringBuilder StringBuilder = new StringBuilder();
         for (String value : somethingList) {
             StringBuilder.append(FormatUtil.value(value, grammar)).append(',');
@@ -113,7 +113,7 @@ public class FormatUtil {
             if (whereIsPoint != -1) {
                 String table  = someElse.substring(0, whereIsPoint); // eg: order
                 String column = someElse.replace(table + '.', ""); // eg: amount
-                temp = '`' + table + "`.`" + column + '`';
+                temp = column.equals("*") ? '`' + table + "`." + column : '`' + table + "`.`" + column + '`';
             } else {
                 temp = '`' + someElse + '`';
             }
@@ -125,7 +125,7 @@ public class FormatUtil {
             } else {
                 String table  = mayBeHasFunc.substring(0, whereIsPoint); // eg: order
                 String column = mayBeHasFunc.replace(table + '.', ""); // eg: amount
-                temp = '`' + table + "`.`" + column + '`';
+                temp = column.equals("*") ? '`' + table + "`." + column : '`' + table + "`.`" + column + '`';
             }
         }
         return temp + alias;

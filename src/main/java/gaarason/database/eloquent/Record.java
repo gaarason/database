@@ -7,7 +7,6 @@ import gaarason.database.support.Column;
 import gaarason.database.utils.StringUtil;
 import gaarason.database.utils.EntityUtil;
 import lombok.Getter;
-import lombok.ToString;
 import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Field;
