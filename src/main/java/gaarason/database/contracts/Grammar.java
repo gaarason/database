@@ -2,7 +2,6 @@ package gaarason.database.contracts;
 
 import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.CloneNotSupportedRuntimeException;
-import gaarason.database.query.grammars.MySqlGrammar;
 
 import java.util.List;
 
@@ -29,6 +28,8 @@ public interface Grammar extends Cloneable {
     void pushValue(String something);
 
     void pushLock(String something);
+
+    void pushUnion(String something, String unionType);
 
     String generateSql(SqlType sqlType);
 

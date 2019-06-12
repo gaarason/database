@@ -566,4 +566,18 @@ public class MySqlBuilder<T> extends Builder<T> {
         grammar.pushLock("for update");
         return this;
     }
+
+    @Override
+    public Builder<T> union(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        grammar.pushUnion(sqlPart, "union");
+        return this;
+    }
+
+    @Override
+    public Builder<T> unionAll(GenerateSqlPart<T> closure) {
+        String sqlPart = generateSql(closure);
+        grammar.pushUnion(sqlPart, "union all");
+        return this;
+    }
 }

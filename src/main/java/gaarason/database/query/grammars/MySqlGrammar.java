@@ -35,6 +35,8 @@ public class MySqlGrammar implements Grammar {
 
     private String lock;
 
+    private String union;
+
     private List<String> valueList = new ArrayList<>();
 
     private List<String> whereParameterList = new ArrayList<>();
@@ -121,6 +123,15 @@ public class MySqlGrammar implements Grammar {
         column = (column == null) ? something : column + ',' + something;
     }
 
+    @Override
+    public void pushUnion(String something, String unionType) {
+        if(union == null){
+            union = " " + unionType + FormatUtil.bracket(something);
+        }else{
+            union += unionType + FormatUtil.bracket(something);
+        }
+    }
+
     private String dealSelect() {
         return null == select ? "*" : select;
     }
@@ -183,6 +194,10 @@ public class MySqlGrammar implements Grammar {
         return limit == null ? "" : (" limit " + limit);
     }
 
+    private String dealUnion() {
+        return union == null ? "" : union;
+    }
+
     @Override
     public String generateSql(SqlType sqlType) {
         String sql;
@@ -208,7 +223,8 @@ public class MySqlGrammar implements Grammar {
                 throw new InvalidSQLTypeException();
         }
 
-        sql += dealJoin() + dealWhere(sqlType) + dealGroup() + dealHaving(sqlType) + dealOrderBy() + dealLimit() + dealLock();
+        sql += dealJoin() + dealWhere(sqlType) + dealGroup() + dealHaving(
+            sqlType) + dealOrderBy() + dealLimit() + dealLock() + dealUnion();
 
         return sql;
     }

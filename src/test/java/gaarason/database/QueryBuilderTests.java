@@ -9,6 +9,7 @@ import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.models.*;
+import gaarason.database.query.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -747,6 +748,25 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             .firstOrFail().toObject();
         Assert.assertNotNull(first2);
         Assert.assertEquals(first2.getId().intValue(), 9);
+    }
+
+    @Test
+    public void union() {
+        Record<StudentSingleModel.Entity> record = studentModel.newQuery()
+            .union((builder -> builder.where("id", "2")))
+            .firstOrFail();
+        System.out.println(record);
+
+    }
+
+    @Test
+    public void unionAll() {
+        Record<StudentSingleModel.Entity> record = studentModel.newQuery()
+            .unionAll((builder -> builder.where("id", "2")))
+            .union((builder -> builder.where("id", "7")))
+            .firstOrFail();
+        System.out.println(record);
+
     }
 
     @Test
