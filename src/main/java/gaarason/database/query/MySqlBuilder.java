@@ -43,7 +43,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> whereIn(String column, List<String> valueList) {
+    public Builder<T> whereIn(String column, List<Object> valueList) {
         String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(formatValue(valueList));
         return whereRaw(sqlPart);
     }
@@ -61,7 +61,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> whereNotIn(String column, List<String> valueList) {
+    public Builder<T> whereNotIn(String column, List<Object> valueList) {
         String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(formatValue(valueList));
         return whereRaw(sqlPart);
     }
@@ -170,7 +170,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> havingIn(String column, List<String> valueList) {
+    public Builder<T> havingIn(String column, List<Object> valueList) {
         String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(formatValue(valueList));
         return havingRaw(sqlPart);
     }
@@ -188,7 +188,7 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> havingNotIn(String column, List<String> valueList) {
+    public Builder<T> havingNotIn(String column, List<Object> valueList) {
         String sqlPart = FormatUtil.column(column) + "not in" + FormatUtil.bracket(formatValue(valueList));
         return havingRaw(sqlPart);
     }
@@ -466,7 +466,7 @@ public class MySqlBuilder<T> extends Builder<T> {
      * @param valueList 参数
      * @return 参数占位符?
      */
-    private String formatValue(List<String> valueList) {
+    private String formatValue(List<Object> valueList) {
         return FormatUtil.value(valueList, grammar);
     }
 

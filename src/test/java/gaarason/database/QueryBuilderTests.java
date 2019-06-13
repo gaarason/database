@@ -428,7 +428,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 条件_whereIn() {
-        List<String> idList = new ArrayList<>();
+        List<Object> idList = new ArrayList<>();
         idList.add("4");
         idList.add("5");
         idList.add("6");
@@ -439,7 +439,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             .toObjectList();
         Assert.assertEquals(entityList1.size(), 4);
 
-        List<String> idList2 = new ArrayList<>();
+        List<Object> idList2 = new ArrayList<>();
         idList2.add("10");
         idList2.add("9");
         idList2.add("7");
@@ -611,7 +611,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 筛选_havingIn() {
-        List<String> idList = new ArrayList<>();
+        List<Object> idList = new ArrayList<>();
         idList.add("4");
         idList.add("5");
         idList.add("6");
@@ -622,7 +622,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             .toObjectList();
         Assert.assertEquals(entityList1.size(), 4);
 
-        List<String> idList2 = new ArrayList<>();
+        List<Object> idList2 = new ArrayList<>();
         idList2.add("10");
         idList2.add("9");
         idList2.add("7");

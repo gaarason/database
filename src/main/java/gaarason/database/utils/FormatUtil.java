@@ -63,10 +63,10 @@ public class FormatUtil {
      * @param somethingList eg:[1,2,3]
      * @return eg: ? , ? , ?
      */
-    public static String value(List<String> somethingList, Grammar grammar) {
+    public static String value(List<Object> somethingList, Grammar grammar) {
         StringBuilder StringBuilder = new StringBuilder();
-        for (String value : somethingList) {
-            StringBuilder.append(FormatUtil.value(value, grammar)).append(',');
+        for (Object value : somethingList) {
+            StringBuilder.append(FormatUtil.value(value.toString(), grammar)).append(',');
         }
         return StringBuilder.substring(0, StringBuilder.length() - 1);
     }
