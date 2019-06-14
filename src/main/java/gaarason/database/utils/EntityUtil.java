@@ -94,7 +94,8 @@ public class EntityUtil {
             Table table = entityClass.getAnnotation(Table.class);
             return table.name();
         }
-        return StringUtil.humpToLine(entityClass.getName());
+        String[] split = entityClass.getName().split("\\.");
+        return StringUtil.humpToLine(split[split.length -1]);
     }
 
     /**

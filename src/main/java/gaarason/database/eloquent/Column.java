@@ -81,4 +81,9 @@ public @interface Column
      * (Applies only if a decimal column is used.)
      */
     int scale() default 0;
+
+    /**
+     * 注释
+     */
+    String comment() default "";
 }
