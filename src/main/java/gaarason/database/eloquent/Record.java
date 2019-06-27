@@ -2,13 +2,16 @@ package gaarason.database.eloquent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gaarason.database.exception.*;
+import gaarason.database.exception.EntityNewInstanceException;
+import gaarason.database.exception.PrimaryKeyNotFoundException;
+import gaarason.database.exception.TypeNotSupportedException;
 import gaarason.database.support.Column;
-import gaarason.database.utils.StringUtil;
 import gaarason.database.utils.EntityUtil;
+import gaarason.database.utils.StringUtil;
 import lombok.Getter;
 import org.springframework.lang.Nullable;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,7 +22,7 @@ import java.util.Set;
  * 记录对象
  * @param <T> 数据实体类
  */
-public class Record<T> {
+public class Record<T> implements Serializable {
 
     /**
      * 元数据
@@ -416,7 +419,7 @@ public class Record<T> {
      * 转字符
      * @return 字符
      */
-    public String toString(){
+    public String toString() {
         return entity.toString();
     }
 }

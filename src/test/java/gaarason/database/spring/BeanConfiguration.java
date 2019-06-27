@@ -13,7 +13,8 @@ import java.util.*;
 
 @Slf4j
 @Configuration
-@PropertySource("database.properties")
+//@PropertySource( value = {"database2.properties","database3.properties"})
+@PropertySource( value = {"database.properties"})
 public class BeanConfiguration {
 
 //    @Bean
