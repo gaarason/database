@@ -2,6 +2,7 @@ package gaarason.database.contracts.function;
 
 import gaarason.database.query.Builder;
 
+@FunctionalInterface
 public interface GenerateSqlPart<V> {
 
     /**

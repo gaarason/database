@@ -31,6 +31,8 @@ public @interface Column
      */
     boolean unique() default false;
 
+    boolean unsigned() default false;
+
     /**
      * (Optional) Whether the database column is nullable.
      */

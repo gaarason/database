@@ -3,13 +3,13 @@ package gaarason.database.support;
 import lombok.Data;
 import org.springframework.lang.Nullable;
 
-import java.sql.ResultSetMetaData;
+import java.io.Serializable;
 
 /**
  * jdbc字段值对象
  */
 @Data
-public class Column {
+public class Column implements Serializable {
 
     /**
      * 字段名

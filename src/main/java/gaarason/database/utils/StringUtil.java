@@ -9,12 +9,16 @@ public class StringUtil {
     final private static Pattern humpPattern = Pattern.compile("[A-Z]");
 
     /**
-     * 下划线转小驼峰
-     * @param str 原字符串
+     * 下划线转驼峰
+     * @param str              原字符串
+     * @param firstIsUpperCase 大驼峰
      * @return 处理后的字符
      */
-    public static String lineToHump(String str) {
-        str = str.toLowerCase();
+    public static String lineToHump(String str, boolean... firstIsUpperCase) {
+        str = ltrim(rtrim(str.toLowerCase(), "_"), "_");
+        if (firstIsUpperCase.length != 0 && firstIsUpperCase[0]) {
+            str = "_" + str;
+        }
         Matcher      matcher = linePattern.matcher(str);
         StringBuffer sb      = new StringBuffer();
         while (matcher.find()) {

@@ -22,6 +22,9 @@ public class StudentSingle6Model extends SingleModel<StudentSingle6Model.Entity>
     @Data
     @Table(name = "student")
     public static class Entity {
+
+        final public static String NAME = "name";
+
         @Primary
         private Integer id;
 

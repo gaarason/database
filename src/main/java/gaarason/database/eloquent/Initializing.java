@@ -3,10 +3,11 @@ package gaarason.database.eloquent;
 import gaarason.database.utils.EntityUtil;
 import lombok.Getter;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 
-abstract class Initializing<T> {
+abstract class Initializing<T> implements Serializable {
 
     /**
      * 主键列名(并非一定是实体的属性名)

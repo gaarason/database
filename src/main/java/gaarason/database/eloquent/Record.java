@@ -114,7 +114,7 @@ public class Record<T> implements Serializable {
     public String toSearch() {
         Map<String, Object> stringObjectMap = toMap();
         Set<String>         keySet          = stringObjectMap.keySet();
-        String[]            keyArray        = keySet.toArray(new String[keySet.size()]);
+        String[]            keyArray        = keySet.toArray(new String[0]);
         Arrays.sort(keyArray);
         StringBuilder sb = new StringBuilder();
         for (String key : keyArray) {
