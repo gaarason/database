@@ -5,7 +5,7 @@ import gaarason.database.generator.element.ColumnAnnotation;
 import gaarason.database.generator.element.Field;
 import gaarason.database.generator.element.PrimaryAnnotation;
 import gaarason.database.utils.StringUtil;
-import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -14,53 +14,139 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
-@Data
 @Slf4j
 abstract public class Manager {
 
+    @Setter
     private String namespace = "temp";
 
-    final private static String pojoTemplate = "pojo";
+    @Setter
+    private String pojoDir = "pojo";
 
-    final private static String fieldTemplate = "field";
+    @Setter
+    private String pojoPrefix = "";
 
-    final private static String pojoTemplateStr = fileGetContent(getAbsoluteReadFileName(pojoTemplate));
+    @Setter
+    private String pojoSuffix = "";
 
-    final private static String fieldTemplateStr = fileGetContent(getAbsoluteReadFileName(fieldTemplate));
+    @Setter
+    private String daoDir = "dao";
+
+    @Setter
+    private String daoPrefix = "";
+
+    @Setter
+    private String daoSuffix = "Dao";
+
+    @Setter
+    private String baseDaoDir = "base";
+
+    @Setter
+    private String baseDaoName = "BaseDao";
+
+    private String[] disInsertable = {};
+
+    private String[] disUpdatable = {};
+
+    final private static String pojoTemplateStr = fileGetContent(getAbsoluteReadFileName("pojo"));
+
+    final private static String fieldTemplateStr = fileGetContent(getAbsoluteReadFileName("field"));
+
+    final private static String baseDaoTemplateStr = fileGetContent(getAbsoluteReadFileName("baseDao"));
+
+    final private static String daoTemplateStr = fileGetContent(getAbsoluteReadFileName("dao"));
+
+    private String baseDaoNamespace;
+
+    private String daoNamespace;
+
+    private String pojoNamespace;
 
     /**
      * @return 数据库操作model
      */
     abstract public Model getModel();
 
+    private void init() {
+        baseDaoNamespace = namespace + ("".equals(daoDir) ? "" : ("." + daoDir)) + ("".equals(
+            baseDaoDir) ? "" : ("." + baseDaoDir));
+        daoNamespace = namespace + ("".equals(daoDir) ? "" : ("." + daoDir));
+        pojoNamespace = namespace + ("".equals(pojoDir) ? "" : ("." + pojoDir));
+    }
+
     public void run() {
+        // 初始化namespace
+        init();
         // 表信息
         List<Map<String, Object>> tables = showTables();
+        // baseDao 文件内容
+        String baseDaoTemplateStrReplace = fillBaseDaoTemplate();
+        // baseDao 写入文件
+        filePutContent(getAbsoluteWriteFilePath(baseDaoNamespace), baseDaoName, baseDaoTemplateStrReplace);
 
         for (Map<String, Object> table : tables) {
             // 单个表
             for (String key : table.keySet()) {
                 // 表名
                 String tableName = table.get(key).toString();
+
                 // pojo文件名
-                String pojoFileName = StringUtil.lineToHump(tableName, true) + ".java";
+                String pojoName = pojoName(tableName);
                 // pojo文件内容
-                String pojoTemplateStrReplace = fillPojoTemplate(tableName);
-                // 写入文件
-                filePutContent(getAbsoluteWriteFilePath(), pojoFileName, pojoTemplateStrReplace);
+                String pojoTemplateStrReplace = fillPojoTemplate(tableName, pojoName);
+                // pojo写入文件
+                filePutContent(getAbsoluteWriteFilePath(pojoNamespace), pojoName, pojoTemplateStrReplace);
+
+                // dao文件名
+                String daoName = daoName(tableName);
+                // dao文件内容
+                String daoTemplateStrReplace = fillDaoTemplate(tableName, daoName, pojoName);
+                // dao写入文件
+                filePutContent(getAbsoluteWriteFilePath(daoNamespace), daoName, daoTemplateStrReplace);
             }
         }
     }
 
     /**
-     * 填充pojo模板内容
-     * @param tableName 表名
+     * 填充baseDao模板内容
      * @return 内容
      */
-    private String fillPojoTemplate(String tableName) {
-        String              pojoName     = StringUtil.lineToHump(tableName, true);
+    private String fillBaseDaoTemplate() {
         Map<String, String> parameterMap = new HashMap<>();
-        parameterMap.put("${namespace}", namespace);
+        parameterMap.put("${namespace}", baseDaoNamespace);
+        parameterMap.put("${dao_name}", baseDaoName);
+
+        return fillTemplate(baseDaoTemplateStr, parameterMap);
+    }
+
+    /**
+     * 填充dao模板内容
+     * @param tableName 表名
+     * @param daoName   dao对象名
+     * @param pojoName  pojo对象名
+     * @return 内容
+     */
+    private String fillDaoTemplate(String tableName, String daoName, String pojoName) {
+        Map<String, String> parameterMap = new HashMap<>();
+        parameterMap.put("${namespace}", daoNamespace);
+        parameterMap.put("${base_dao_namespace}", baseDaoNamespace);
+        parameterMap.put("${base_dao_name}", baseDaoName);
+        parameterMap.put("${pojo_namespace}", pojoNamespace);
+        parameterMap.put("${pojo_name}", pojoName);
+        parameterMap.put("${dao_name}", daoName);
+
+        return fillTemplate(daoTemplateStr, parameterMap);
+    }
+
+    /**
+     * 填充pojo模板内容
+     * @param tableName 表名
+     * @param pojoName  对象名
+     * @return 内容
+     */
+    private String fillPojoTemplate(String tableName, String pojoName) {
+        Map<String, String> parameterMap = new HashMap<>();
+        parameterMap.put("${namespace}", pojoNamespace);
         parameterMap.put("${pojo_name}", pojoName);
         parameterMap.put("${table}", tableName);
         parameterMap.put("${fields}", fillFieldsTemplate(tableName));
@@ -78,7 +164,7 @@ abstract public class Manager {
         // 字段信息
         List<Map<String, Object>> fields = descTable(tableName);
 
-        log.info("tableName 字段信息 {}", fields);
+        log.info("{} 字段信息 {}", tableName, fields);
 
         for (Map<String, Object> field : fields) {
             // 每个字段的填充
@@ -107,8 +193,8 @@ abstract public class Manager {
         columnAnnotation.setUnique(field.get("COLUMN_KEY").toString().equals("UNI"));
         columnAnnotation.setUnsigned(field.get("COLUMN_TYPE").toString().contains("unsigned"));
         columnAnnotation.setNullable(field.get("IS_NULLABLE").toString().equals("YES"));
-        columnAnnotation.setInsertable(true);
-        columnAnnotation.setUpdatable(true);
+        columnAnnotation.setInsertable(!Arrays.asList(disInsertable).contains(field.get("COLUMN_NAME").toString()));
+        columnAnnotation.setUpdatable(!Arrays.asList(disUpdatable).contains(field.get("COLUMN_NAME").toString()));
         if (field.get("CHARACTER_MAXIMUM_LENGTH") != null) {
             columnAnnotation.setLength(Integer.valueOf(field.get("CHARACTER_MAXIMUM_LENGTH").toString()));
         }
@@ -129,6 +215,14 @@ abstract public class Manager {
         parameterMap.put("${field}", fieldInfo.toString());
 
         return fillTemplate(fieldTemplateStr, parameterMap);
+    }
+
+    private String pojoName(String tableName) {
+        return pojoPrefix + StringUtil.lineToHump(tableName, true) + pojoSuffix;
+    }
+
+    private String daoName(String tableName) {
+        return daoPrefix + StringUtil.lineToHump(tableName, true) + daoSuffix;
     }
 
     @SuppressWarnings("unchecked")
@@ -171,6 +265,15 @@ abstract public class Manager {
         return name;
     }
 
+    public void setDisInsertable(String... column) {
+        disInsertable = column;
+    }
+
+    public void setDisUpdatable(String... column) {
+        disUpdatable = column;
+    }
+
+
     /**
      * 填充模板
      * @param template     模板内容
@@ -192,7 +295,7 @@ abstract public class Manager {
             "/main/java/gaarason/database/generator/template/" + name;
     }
 
-    private String getAbsoluteWriteFilePath() {
+    private String getAbsoluteWriteFilePath(String namespace) {
         return Thread.currentThread().getStackTrace()[1].getClass()
             .getResource("/")
             .toString()
@@ -220,7 +323,7 @@ abstract public class Manager {
             if (!file.exists()) {
                 file.mkdirs();
             }
-            FileWriter writer = new FileWriter(path + fileName, false);
+            FileWriter writer = new FileWriter(path + fileName + ".java", false);
             writer.write(content);
             writer.flush();
             writer.close();

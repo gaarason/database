@@ -14,5 +14,4 @@ import java.util.Date;
 public class ${pojo_name} implements Serializable {
 
 ${fields}
-
 }

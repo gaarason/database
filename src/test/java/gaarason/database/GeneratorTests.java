@@ -2,7 +2,8 @@ package gaarason.database;
 
 import gaarason.database.tool.Generator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.*;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +22,11 @@ public class GeneratorTests {
     Generator generator;
 
     @Test
-    public void run(){
-
-        generator.setNamespace("temp.pojo");
+    public void run() {
+        generator.setNamespace("temp");
+        generator.setDisInsertable("created_at", "updated_at", "created_on", "updated_on");
+        generator.setDisUpdatable("created_at", "updated_at", "created_on", "updated_on");
         generator.run();
-
     }
 
 }
