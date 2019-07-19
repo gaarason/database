@@ -1,10 +1,10 @@
 package gaarason.database.query;
 
 import gaarason.database.connections.ProxyDataSource;
-import gaarason.database.contracts.builder.OrderBy;
-import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.contracts.Grammar;
+import gaarason.database.contracts.builder.OrderBy;
 import gaarason.database.contracts.builder.*;
+import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.*;
 import gaarason.database.exception.*;
 import gaarason.database.support.RecordFactory;
@@ -26,7 +26,7 @@ import java.util.Map;
 @Slf4j
 abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Union<T>, Support<T>, From<T>, Execute<T>,
     Select<T>, OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T>,
-    Lock<T>,Native<T>,Join<T> {
+    Lock<T>, Native<T>, Join<T> {
 
     /**
      * 数据实体类
@@ -122,7 +122,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
             throw new NestedTransactionException();
         }
         try {
-            dataSource.setInTransaction(true);
+            dataSource.setInTransaction();
             Connection connection = dataSource.getConnection();
             connection.setAutoCommit(false);
             setLocalThreadConnection(connection);
@@ -139,8 +139,8 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
-            dataSource.setInTransaction(false);
-
+            removeLocalThreadConnection();
+            dataSource.setOutTransaction();
         }
     }
 
@@ -152,7 +152,8 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
-            dataSource.setInTransaction(false);
+            removeLocalThreadConnection();
+            dataSource.setOutTransaction();
         }
     }
 
@@ -169,7 +170,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
                 runnable.run();
                 commit();
                 return true;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 rollBack();
                 if (!ExceptionUtil.causedByDeadlock(e)) {
                     throw e;
@@ -254,7 +255,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
     public int execute(String sql, Collection<String> parameters) throws SQLRuntimeException {
         Connection connection = theConnection(true);
         try {
-            return executeSql(connection, sql,parameters).executeUpdate();
+            return executeSql(connection, sql, parameters).executeUpdate();
         } catch (SQLException e) {
             throw new SQLRuntimeException(e.getMessage(), e);
         } finally {
@@ -339,13 +340,14 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
 
     /**
      * 执行sql
-     * @param connection 数据库连接
-     * @param sql 查询语句
+     * @param connection    数据库连接
+     * @param sql           查询语句
      * @param parameterList 参数绑定
      * @return 预执行对象
      * @throws SQLException sql错误
      */
-    private PreparedStatement executeSql(Connection connection, String sql, Collection<String> parameterList) throws SQLException {
+    private PreparedStatement executeSql(Connection connection, String sql, Collection<String> parameterList)
+        throws SQLException {
         // 日志记录
         model.log(sql, parameterList);
         // 预执行
@@ -389,6 +391,13 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
      */
     private Connection getLocalThreadConnection() {
         return localThreadConnectionList.get(localThreadConnectionListName());
+    }
+
+    /**
+     * 移除线程内的数据库连接
+     */
+    private void removeLocalThreadConnection() {
+        localThreadConnectionList.remove(localThreadConnectionListName());
     }
 
     private String localThreadConnectionListName() {

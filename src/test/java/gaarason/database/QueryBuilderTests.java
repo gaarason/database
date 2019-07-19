@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 @Slf4j
 @FixMethodOrder(MethodSorters.JVM)
@@ -46,27 +47,41 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     TeacherModel teacherModel;
 
     @Test
-    public void 新增_非entity方式() {
-        List<String> columnNameList = new ArrayList<>();
-        columnNameList.add("id");
-        columnNameList.add("name");
-        columnNameList.add("age");
-        columnNameList.add("sex");
-        List<String> valueList = new ArrayList<>();
-        valueList.add("134");
-        valueList.add("testNAme");
-        valueList.add("11");
-        valueList.add("1");
+    public void 新增_非entity方式() throws InterruptedException {
+        int count = 1000;
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+        for (int i = 0; i < count; i++) {
+            new Thread(() -> {
+                List<String> columnNameList = new ArrayList<>();
+//                columnNameList.add("id");
+                columnNameList.add("name");
+                columnNameList.add("age");
+                columnNameList.add("sex");
+                List<String> valueList = new ArrayList<>();
+//                valueList.add("134");
+                valueList.add("testNAme134");
+                valueList.add("11");
+                valueList.add("1");
 
-        int insert = studentModel.newQuery().select(columnNameList).value(valueList).insert();
-        Assert.assertEquals(insert, 1);
-        StudentSingleModel.Entity entityFirst = studentModel.newQuery().where("id", "134").firstOrFail().toObject();
-        SimpleDateFormat          formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Assert.assertNotNull(entityFirst);
-        Assert.assertEquals(134, entityFirst.getId().intValue());
-        Assert.assertEquals(11, entityFirst.getAge().intValue());
-        Assert.assertEquals("testNAme", entityFirst.getName());
-        Assert.assertEquals(0, entityFirst.getTeacherId().intValue());
+                int insert = studentModel.newQuery().select(columnNameList).value(valueList).insert();
+                Assert.assertEquals(insert, 1);
+                StudentSingleModel.Entity entityFirst = studentModel.newQuery()
+                    .where("name", "testNAme134")
+                    .orderBy("id", OrderBy.DESC)
+                    .firstOrFail()
+                    .toObject();
+                SimpleDateFormat          formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                System.out.println(entityFirst);
+                Assert.assertNotNull(entityFirst);
+//                Assert.assertEquals(134, entityFirst.getId().intValue());
+                Assert.assertEquals(11, entityFirst.getAge().intValue());
+                Assert.assertEquals("testNAme134", entityFirst.getName());
+                Assert.assertEquals(0, entityFirst.getTeacherId().intValue());
+                countDownLatch.countDown();
+            }).start();
+        }
+        countDownLatch.await();
+
     }
 
     @Test
@@ -658,19 +673,19 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     @Test
     public void 筛选_orHaving() {
         List<StudentSingleModel.Entity> entityList1 =
-            studentModel.newQuery().select("id").group("id").having("id",">", "3").orHaving(
+            studentModel.newQuery().select("id").group("id").having("id", ">", "3").orHaving(
                 (builder) -> builder.havingRaw("id=4")
             ).get().toObjectList();
         Assert.assertEquals(entityList1.size(), 7);
 
         List<StudentSingleModel.Entity> entityList3 =
-            studentModel.newQuery().select("id").group("id").having("id",">", "3").orHaving(
+            studentModel.newQuery().select("id").group("id").having("id", ">", "3").orHaving(
                 (builder) -> builder.having("id", "4")
             ).get().toObjectList();
         Assert.assertEquals(entityList3.size(), 7);
 
         List<StudentSingleModel.Entity> entityList2 =
-            studentModel.newQuery().select("id").group("id","age").having("id", "3").orHaving(
+            studentModel.newQuery().select("id").group("id", "age").having("id", "3").orHaving(
                 (builder) -> builder.havingBetween("id", "4", "10").having("age", ">", "11")
             ).get().toObjectList();
         Assert.assertEquals(entityList2.size(), 6);
@@ -678,12 +693,18 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 筛选_andHaving() {
-        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().select("id").group("id").having("id", "3").andHaving(
-            (builder) -> builder.havingRaw("id=4")
-        ).get().toObjectList();
+        List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery()
+            .select("id")
+            .group("id")
+            .having("id", "3")
+            .andHaving(
+                (builder) -> builder.havingRaw("id=4")
+            )
+            .get()
+            .toObjectList();
         Assert.assertEquals(entityList1.size(), 0);
 
-        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().select("id").group("id","age").having(
+        List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery().select("id").group("id", "age").having(
             "id", "7").andHaving(
             (builder) -> builder.havingBetween("id", "4", "10").having("age", ">", "11")
         ).get().toObjectList();
@@ -694,12 +715,12 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     @Test
     public void 筛选_andHaving与orHaving无线嵌套() {
         List<StudentSingleModel.Entity> entityList1 =
-            studentModel.newQuery().select("id").group("id","age","name").having(
-            "id", "3").orHaving(
-            (builder) -> builder.having("age", ">", "11").having("id", "7").andHaving(
-                (builder2) -> builder2.havingBetween("id", "4", "10").having("age", ">", "11")
-            )
-        ).from("student").select("id", "name").get().toObjectList();
+            studentModel.newQuery().select("id").group("id", "age", "name").having(
+                "id", "3").orHaving(
+                (builder) -> builder.having("age", ">", "11").having("id", "7").andHaving(
+                    (builder2) -> builder2.havingBetween("id", "4", "10").having("age", ">", "11")
+                )
+            ).from("student").select("id", "name").get().toObjectList();
         Assert.assertEquals(entityList1.size(), 2);
     }
 
@@ -710,7 +731,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
         List<StudentSingleModel.Entity> entityList = studentModel.newQuery()
             .select("id", "name", "age")
-            .group("id","name","age")
+            .group("id", "name", "age")
             .havingBetween("id", "1", "2")
             .havingExists(
                 builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
@@ -723,7 +744,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
         List<StudentSingleModel.Entity> entityList2 = studentModel.newQuery()
             .select("id", "name", "age")
-            .group("id","name","age")
+            .group("id", "name", "age")
             .havingBetween("id", "1", "2")
             .havingExists(
                 builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
@@ -736,9 +757,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void join(){
+    public void join() {
         RecordList<StudentSingleModel.Entity> student_as_t = studentModel.newQuery()
-            .select("student.*","t.age as age2")
+            .select("student.*", "t.age as age2")
             .join("student as t", "student.id", "=", "t.age")
             .get();
         System.out.println(student_as_t.toMapList());
@@ -804,23 +825,91 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertNotEquals(entity.getName(), "dddddd");
     }
 
+
     @Test
-    public void 事物_多个数据连接嵌套事物() {
-        // 1层事物
-        studentModel.newQuery().transaction(() -> {
-            studentModel.newQuery().data("name", "testttt").where("id", "9").update();
-            // 2层事物
-            student2Model.newQuery().transaction(() -> {
-                student2Model.newQuery().data("name", "testttt").where("id", "4").update();
-                try {
-                    // 3层事物
-                    student3Model.newQuery().transaction(() -> {
-                        student3Model.newQuery().where("id", "1").data("name", "dddddd").update();
+    public void 事物_多线程下_多个数据连接嵌套事物2() throws InterruptedException {
+        int count = 100;
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+        for (int i = 0; i < count; i++) {
+            new Thread(() -> {
+                // 1层事物
+                studentModel.newQuery().transaction(() -> {
+                    studentModel.newQuery().data("name", "testttt").where("id", "9").update();
+                    // 2层事物
+                    student2Model.newQuery().transaction(() -> {
+                        student2Model.newQuery().data("name", "testttt").where("id", "4").update();
+                        try {
+                            // 3层事物
+                            student3Model.newQuery().transaction(() -> {
+                                student3Model.newQuery().where("id", "1").data("name", "dddddd").update();
+                                StudentSingle3Model.Entity entity = student3Model.newQuery()
+                                    .where("id", "1")
+                                    .firstOrFail()
+                                    .toObject();
+//                                Assert.assertEquals(entity.getName(), "dddddd");
+                                throw new RuntimeException("业务上抛了个异常");
+                            }, 1);
+                        } catch (RuntimeException e) {
+                            log.info("student3Model 业务上抛了个异常, 成功捕获, 所以student3Model上的事物回滚");
+                        }
+                        // student3Model 回滚
                         StudentSingle3Model.Entity entity = student3Model.newQuery()
                             .where("id", "1")
                             .firstOrFail()
                             .toObject();
-                        Assert.assertEquals(entity.getName(), "dddddd");
+//                        Assert.assertNotEquals(entity.getName(), "dddddd");
+
+                        // student2Model 不受影响
+                        StudentSingle2Model.Entity id = student2Model.newQuery()
+                            .where("id", "4")
+                            .firstOrFail().toObject();
+//                        Assert.assertEquals(id.getName(), "testttt");
+
+                    }, 1);
+                    StudentSingleModel.Entity id = studentModel.newQuery()
+                        .where("id", "9")
+                        .firstOrFail().toObject();
+//                    Assert.assertEquals(id.getName(), "testttt");
+                }, 3);
+
+                countDownLatch.countDown();
+                System.out.println("子线程结束");
+            }).start();
+            System.out.println("开启线程: " + i);
+        }
+        countDownLatch.await();
+        System.out.println("所有线程结束");
+    }
+
+    @Test
+    public void 事物_多个数据连接嵌套事物() {
+        // 1层事物
+        studentModel.newQuery().transaction(() -> {
+            System.out.println("studentModel 1层事物中");
+            studentModel.newQuery().data("name", "testttt").where("id", "9").update();
+            // 2层事物
+            student2Model.newQuery().transaction(() -> {
+                System.out.println("student2Model 1层事物中 studentModel 2层事物中");
+                student2Model.newQuery().data("name", "testttt").where("id", "4").update();
+
+                // 3层事物
+                student3Model.newQuery().transaction(() -> {
+                    StudentSingle3Model.Entity entity = student3Model.newQuery()
+                        .where("id", "1")
+                        .firstOrFail()
+                        .toObject();
+                }, 1);
+
+                try {
+                    // 3层事物
+                    student3Model.newQuery().transaction(() -> {
+                        System.out.println("student3Model 1层事物中 student2Model 2层事物中 studentModel 3层事物中");
+                        student3Model.newQuery().where("id", "1").data("name", "ddddddxx").update();
+                        StudentSingle3Model.Entity entity = student3Model.newQuery()
+                            .where("id", "1")
+                            .firstOrFail()
+                            .toObject();
+                        Assert.assertEquals(entity.getName(), "ddddddxx");
                         throw new RuntimeException("业务上抛了个异常");
                     }, 1);
                 } catch (RuntimeException e) {
@@ -828,7 +917,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
                 }
                 // student3Model 回滚
                 StudentSingle3Model.Entity entity = student3Model.newQuery().where("id", "1").firstOrFail().toObject();
-                Assert.assertNotEquals(entity.getName(), "dddddd");
+                Assert.assertNotEquals(entity.getName(), "ddddddxx");
 
                 // student2Model 不受影响
                 StudentSingle2Model.Entity id = student2Model.newQuery()
@@ -855,9 +944,65 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(id2.getName(), "testttt");
 
         StudentSingle3Model.Entity entity = student3Model.newQuery().where("id", "1").firstOrFail().toObject();
-        Assert.assertNotEquals(entity.getName(), "dddddd");
+        Assert.assertNotEquals(entity.getName(), "ddddddxx");
 
     }
+
+    @Test
+    public void 事物_多线程下_多个数据连接嵌套事物() throws InterruptedException {
+        int count = 100;
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+        for (int i = 0; i < count; i++) {
+            new Thread(() -> {
+                // 1层事物
+                studentModel.newQuery().transaction(() -> {
+                    studentModel.newQuery().data("name", "testttt").where("id", "9").update();
+                    // 2层事物
+                    student2Model.newQuery().transaction(() -> {
+                        student2Model.newQuery().data("name", "testttt").where("id", "4").update();
+                        try {
+                            // 3层事物
+                            student3Model.newQuery().transaction(() -> {
+                                student3Model.newQuery().where("id", "1").data("name", "dddddd").update();
+                                StudentSingle3Model.Entity entity = student3Model.newQuery()
+                                    .where("id", "1")
+                                    .firstOrFail()
+                                    .toObject();
+//                                Assert.assertEquals(entity.getName(), "dddddd");
+                                throw new RuntimeException("业务上抛了个异常");
+                            }, 1);
+                        } catch (RuntimeException e) {
+                            log.info("student3Model 业务上抛了个异常, 成功捕获, 所以student3Model上的事物回滚");
+                        }
+                        // student3Model 回滚
+                        StudentSingle3Model.Entity entity = student3Model.newQuery()
+                            .where("id", "1")
+                            .firstOrFail()
+                            .toObject();
+//                        Assert.assertNotEquals(entity.getName(), "dddddd");
+
+                        // student2Model 不受影响
+                        StudentSingle2Model.Entity id = student2Model.newQuery()
+                            .where("id", "4")
+                            .firstOrFail().toObject();
+//                        Assert.assertEquals(id.getName(), "testttt");
+
+                    }, 1);
+                    StudentSingleModel.Entity id = studentModel.newQuery()
+                        .where("id", "9")
+                        .firstOrFail().toObject();
+//                    Assert.assertEquals(id.getName(), "testttt");
+                }, 3);
+
+                countDownLatch.countDown();
+                System.out.println("子线程结束");
+            }).start();
+            System.out.println("开启线程: " + i);
+        }
+        countDownLatch.await();
+        System.out.println("所有线程结束");
+    }
+
 
     @Test
     public void 事物_单个数据连接不可嵌套事物() {
@@ -1036,7 +1181,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 原生(){
+    public void 原生() {
         Record<StudentSingleModel.Entity> record = studentModel.newQuery()
             .query("select * from student where id=1", new ArrayList<>());
         Assert.assertNotNull(record);

@@ -10,9 +10,7 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
 
@@ -35,12 +33,22 @@ public class ProxyDataSource implements DataSource {
      * 是否主从(读写分离)
      */
     private boolean hasSlave;
+
     /**
      * 是否处于数据库事物中
      */
-    @Setter
-    @Getter
-    private boolean inTransaction = false;
+    private ThreadLocal<Boolean> inTransaction = ThreadLocal.withInitial(() -> false);
+
+    public boolean isInTransaction(){
+        return inTransaction.get();
+    }
+    public void setInTransaction(){
+        inTransaction.set(true);
+    }
+    public void setOutTransaction(){
+//        inTransaction.set(false);
+        inTransaction.remove();
+    }
 
     /**
      * 是否写连接
@@ -49,23 +57,25 @@ public class ProxyDataSource implements DataSource {
     @Getter
     private boolean isWrite = false;
 
-    /**
-     * 线程安全
-     */
-    private Map<String, Integer> localThreadMasterDataSourceIndexList = new HashMap<>();
+    private ThreadLocal<DataSource> masterDataSource = ThreadLocal.withInitial(() -> {
+        log.debug("---------------- 首次使用,将DataSource与该线程绑定,加入本地线程 w ---------------");
+        // TODO 权重选择
+        return masterDataSourceList.get((new Random()).nextInt(masterDataSourceList.size()));
+    });
 
-    /**
-     * 线程安全
-     */
-    private Map<String, Integer> localThreadSlaveDataSourceIndexList = new HashMap<>();
+    private ThreadLocal<DataSource> slaveDataSource = ThreadLocal.withInitial(() -> {
+        log.debug("---------------- 首次使用,将DataSource与该线程绑定,加入本地线程 r ---------------");
+        // TODO 权重选择
+        return slaveDataSourceList.get((new Random()).nextInt(slaveDataSourceList.size()));
+    });
 
-    public ProxyDataSource(List<DataSource> masterDataSourceList, List<DataSource> slaveDataSourceList){
+    public ProxyDataSource(List<DataSource> masterDataSourceList, List<DataSource> slaveDataSourceList) {
         this.masterDataSourceList = masterDataSourceList;
         this.slaveDataSourceList = slaveDataSourceList;
         hasSlave = true;
     }
 
-    public ProxyDataSource(List<DataSource> masterDataSourceList){
+    public ProxyDataSource(List<DataSource> masterDataSourceList) {
         this.masterDataSourceList = masterDataSourceList;
         hasSlave = false;
     }
@@ -74,54 +84,14 @@ public class ProxyDataSource implements DataSource {
      * 得到 DataSource
      * @return DataSource
      */
-    private DataSource getRealDataSource(){
-        if(!hasSlave || inTransaction || isWrite){
-            log.debug("---------------- using write dataSource ---------------");
-            return weightSelection(localThreadMasterDataSourceIndexList, masterDataSourceList);
-        }else{
-            log.debug("---------------- using read dataSource ---------------");
-            return weightSelection(localThreadSlaveDataSourceIndexList, slaveDataSourceList);
-        }
-    }
-
-    /**
-     * 一个线程绑定一个DataSource
-     * @return 当前线程的DataSource
-     */
-    private DataSource weightSelection(Map<String, Integer> localThreadConnectionIndexList,
-                                       List<DataSource> dataSourceList) {
-        int i = theLocalThreadConnectionIndex(localThreadConnectionIndexList, dataSourceList.size());
-        log.debug("---------------- using dataSourceList the {}  ---------------", i);
-        return dataSourceList.get(i);
-    }
-
-    /**
-     * 获索引,可以保证线程安全
-     * @param localThreadConnectionIndexList 线程安全的DataSource索引的List
-     * @param size 尺寸
-     * @return 索引
-     */
-    private int theLocalThreadConnectionIndex(Map<String, Integer> localThreadConnectionIndexList, int size) {
-        String threadFlag = Thread.currentThread().getName();
-        if (!localThreadConnectionIndexList.containsKey(threadFlag)) {
-            // todo 按权重选
-            int    index  = size == 0 ? 0 : (new Random()).nextInt(size);
-            log.debug("---------------- 首次使用,将DataSource与该线程绑定,加入线程安全 index : {} ---------------", index);
-            localThreadConnectionIndexList.put(threadFlag, index);
-        }
-        return localThreadConnectionIndexList.get(threadFlag);
+    private DataSource getRealDataSource() {
+        return (!hasSlave || isWrite || isInTransaction()) ? masterDataSource.get() : slaveDataSource.get();
     }
 
     @Override
     public Connection getConnection() throws SQLException {
-
         DataSource realDataSource = getRealDataSource();
-
-        Connection connection     = realDataSource.getConnection();
-
-        return connection;
-
-//        return getRealDataSource().getConnection();
+        return realDataSource.getConnection();
     }
 
     @Override

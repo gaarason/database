@@ -7,7 +7,7 @@ public class ExceptionUtil {
      * @param e 原异常
      * @return 是否为数据库死锁导致的异常
      */
-    public static boolean causedByDeadlock(Exception e) {
+    public static boolean causedByDeadlock(Throwable e) {
         String message = e.getMessage();
         if(message == null){
             return false;
