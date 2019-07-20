@@ -47,8 +47,8 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     TeacherModel teacherModel;
 
     @Test
-    public void 新增_非entity方式() throws InterruptedException {
-        int count = 1000;
+    public void 新增_多线程_非entity方式() throws InterruptedException {
+        int            count          = 1000;
         CountDownLatch countDownLatch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
@@ -70,7 +70,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
                     .orderBy("id", OrderBy.DESC)
                     .firstOrFail()
                     .toObject();
-                SimpleDateFormat          formatter   = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 System.out.println(entityFirst);
                 Assert.assertNotNull(entityFirst);
 //                Assert.assertEquals(134, entityFirst.getId().intValue());
@@ -81,6 +81,39 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             }).start();
         }
         countDownLatch.await();
+    }
+
+    @Test
+    public void 新增_非entity方式() {
+        int count = 1000;
+        for (int i = 0; i < count; i++) {
+            List<String> columnNameList = new ArrayList<>();
+//                columnNameList.add("id");
+            columnNameList.add("name");
+            columnNameList.add("age");
+            columnNameList.add("sex");
+            List<String> valueList = new ArrayList<>();
+//                valueList.add("134");
+            valueList.add("testNAme134");
+            valueList.add("11");
+            valueList.add("1");
+
+            int insert = studentModel.newQuery().select(columnNameList).value(valueList).insert();
+            Assert.assertEquals(insert, 1);
+            StudentSingleModel.Entity entityFirst = studentModel.newQuery()
+                .where("name", "testNAme134")
+                .orderBy("id", OrderBy.DESC)
+                .firstOrFail()
+                .toObject();
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            System.out.println(entityFirst);
+            Assert.assertNotNull(entityFirst);
+//                Assert.assertEquals(134, entityFirst.getId().intValue());
+            Assert.assertEquals(11, entityFirst.getAge().intValue());
+            Assert.assertEquals("testNAme134", entityFirst.getName());
+            Assert.assertEquals(0, entityFirst.getTeacherId().intValue());
+
+        }
 
     }
 
@@ -828,7 +861,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 事物_多线程下_多个数据连接嵌套事物2() throws InterruptedException {
-        int count = 100;
+        int            count          = 100;
         CountDownLatch countDownLatch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
@@ -950,7 +983,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 事物_多线程下_多个数据连接嵌套事物() throws InterruptedException {
-        int count = 100;
+        int            count          = 100;
         CountDownLatch countDownLatch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
