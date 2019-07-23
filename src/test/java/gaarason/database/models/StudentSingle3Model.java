@@ -5,6 +5,7 @@ import gaarason.database.eloquent.Column;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.Primary;
 import gaarason.database.eloquent.Table;
+import gaarason.database.eloquent.relations.MoreToMore;
 import gaarason.database.models.base.SingleModel;
 import lombok.Data;
 import org.springframework.stereotype.Component;
