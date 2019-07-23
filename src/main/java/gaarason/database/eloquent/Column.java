@@ -7,7 +7,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-
 @Documented
 @Inherited
 @Target({ ElementType.FIELD, ElementType.METHOD })
