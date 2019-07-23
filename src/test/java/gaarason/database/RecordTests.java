@@ -12,6 +12,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.runners.MethodSorters;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.concurrent.CountDownLatch;
+
 @Slf4j
 @FixMethodOrder(MethodSorters.JVM)
 public class RecordTests extends DatabaseApplicationTests {
@@ -135,7 +137,30 @@ public class RecordTests extends DatabaseApplicationTests {
         int size = student5Model.onlyTrashed().get().toObjectList().size();
         Assert.assertEquals(size , 0);
 
+    }
 
+    @Test
+    public void ORM多线程兼容性() throws InterruptedException {
+        int count = 100;
+        CountDownLatch countDownLatch = new CountDownLatch(count);
+        for(int i = 0; i < count ; i ++){
+            Record<StudentSingle4Model.Entity> record = studentModel.findOrFail("3");
+            StudentSingle4Model.Entity         entity = record.getEntity();
+            Assert.assertEquals(entity.getAge(), Byte.valueOf("16"));
+            Assert.assertEquals(entity.getName(), "小腾");
+
+            Record<StudentSingle4Model.Entity> noRecord = studentModel.find("32");
+            Assert.assertNull(noRecord);
+
+            Record<StudentSingle4Model.Entity> record2 = studentModel.find("9");
+            Assert.assertNotNull(record2);
+            StudentSingle4Model.Entity         entity2 = record2.getEntity();
+            Assert.assertEquals(entity2.getAge(), Byte.valueOf("17"));
+            Assert.assertEquals(entity2.getName(), "莫西卡");
+
+            countDownLatch.countDown();
+        }
+        countDownLatch.await();
     }
 
 }
