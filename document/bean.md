@@ -2,7 +2,7 @@
 Eloquent ORM for Java
 ## 目录
 * [注册bean](/document/bean.md)
-    * [spring boot](#spring boot)
+    * [spring boot](#spring)
         * [单连接](#单连接)
             * [单库连接](#单库连接)
             * [读写分离](#读写分离)
@@ -10,7 +10,7 @@ Eloquent ORM for Java
         * [使用ProxyDataSource](#使用ProxyDataSource)
 * [使用文档](/document/using.md)
 
-## spring boot
+## spring
 
 使用 spring boot 管理 bean
 
@@ -305,7 +305,7 @@ database.slave1.useGlobalDataSourceStat=${useGlobalDataSourceStat}
 
 ### 多连接
 
-多个数据库连接, 即声明多个可用bean, 兼容读写分离bean声明
+多个数据库连接, 即声明多个可用bean, 兼容读写分离bean声明, 可以动态切换数据库使用的连接
 
 
 ```java
@@ -378,6 +378,8 @@ application.properties 省略
 
 ## 使用ProxyDataSource
 
+上面生成的`ProxyDataSource`进行使用
+
 ```java
 package gaarason.database.models;
 
@@ -427,7 +429,7 @@ public class StudentSingle2Model extends Model<StudentSingle2Model.Entity> {
     protected ProxyDataSource proxyDataSourceHUANAN;
 
     public ProxyDataSource getProxyDataSource(){
-        // 判断后返回指定 连接
+        // 返回指定连接
         return proxyDataSourceHUADONG;
     }
 }
