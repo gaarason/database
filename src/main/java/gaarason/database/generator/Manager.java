@@ -30,19 +30,19 @@ abstract public class Manager {
     private String pojoSuffix = "";
 
     @Setter
-    private String daoDir = "dao";
+    private String daoDir = "model";
 
     @Setter
     private String daoPrefix = "";
 
     @Setter
-    private String daoSuffix = "Dao";
+    private String daoSuffix = "Model";
 
     @Setter
     private String baseDaoDir = "base";
 
     @Setter
-    private String baseDaoName = "BaseDao";
+    private String baseDaoName = "BaseModel";
 
     private String[] disInsertable = {};
 

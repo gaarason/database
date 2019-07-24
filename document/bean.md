@@ -8,8 +8,10 @@ Eloquent ORM for Java
             * [读写分离](#读写分离)
         * [多连接](#多连接)
         * [使用ProxyDataSource](#使用ProxyDataSource)
-* [使用文档](/document/using.md)
-
+* [数据映射](/document/mapping.md)
+* [数据模型](/document/model.md)
+* [查询结果集](/document/model.md)
+* [查询构造器](/document/query.md)
 ## spring
 
 使用 spring boot 管理 bean
