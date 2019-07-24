@@ -4,19 +4,19 @@ Eloquent ORM for Java
 * [注册bean](/document/bean.md)
 * [数据映射](/document/mapping.md)
     * [总览](#总览)
-    * [数据库要求](#数据库要求)
+    * [数据库建议](#数据库建议)
     * [注解](#注解)
         * [Table](#Table)
         * [Primary](#Primary)
         * [Column](#Column)
 * [数据模型](/document/model.md)
-* [查询结果集](/document/model.md)
+* [查询结果集](/document/record.md)
 * [查询构造器](/document/query.md)
 ## 总览
 
-数据映射是用将数据库字段与java对象进行相互转换的必要手段, 理解为`数据`
+数据映射是用将数据库字段与java对象进行相互转换的必要手段, 理解为`数据`  
 任意一个普通pojo对象即可, 下面是一个例子  
-**数据类型应该使用包装类型 eg:使用`Integer`替代`int`**  
+**数据类型应该使用包装类型替代基本类型 例如使用`Integer`替代`int`**  
 
 ```java
 package temp.pojo;
@@ -62,7 +62,7 @@ public class Student implements Serializable {
 
 ```
 
-## 数据库要求
+## 数据库建议
 
 数据库字段不建议允许为`null`, 如果允许为null则在使用`ORM新增`等操作时,需要声明每一个字段,因为程序不能分辨`null`值的意义
 
@@ -81,7 +81,7 @@ public class Student implements Serializable {
 
 - `gaarason.database.eloquent.Column` 用于确定每个数据字段的具体属性
 - 当`insertable`以及`updatable`为`false`时, 对应字段的`ORM`操作将被忽略 
-- 如果某个数据对象既没有`Primary`注解, 则大多数`ORM`操作将被禁用
+- 如果某个数据对象没有`Primary`注解, 则大多数`ORM`操作将被禁用
 
 
 

@@ -10,7 +10,7 @@ Eloquent ORM for Java
     * [作用域](#作用域)
         * [自定义查询作用域](#自定义查询作用域)
         * [软删除](#软删除)
-* [查询结果集](/document/model.md)
+* [查询结果集](/document/record.md)
 * [查询构造器](/document/query.md)
 ## 总览
 
@@ -66,11 +66,11 @@ public class StudentModel extends BaseModel<Student> {
 
 Eloquent 模型可以触发事件，允许你在模型生命周期中的多个时间点调用如下这些方法：retrieved, creating, created, updating, updated, saving, saved, deleting, deleted, restoring, restored。事件允许你在一个指定模型类每次保存或更新的时候执行代码。
 
-`retrieved` 事件会在从数据库中获取已存在模型时触发。  
+`retrieved` 事件会在从数据库中获取已存在模型时触发。   
 当一个新模型被首次保存的时候，`creating` 和 `created` 事件会被触发。 
-如果一个模型已经在数据库中存在并调用 `save` 方法，`updating`和`updated` 事件会被触发.  
-无论是创建还是更新，`saving`和`saved` 事件都会被触发。
-`deleting`, `deleted`, `restoring`, `restored`则分别在删除以及恢复时触发
+如果一个模型已经在数据库中存在并调用 `save` 方法，`updating`和`updated` 事件会被触发。  
+无论是创建还是更新，`saving`和`saved` 事件都会被触发。 
+`deleting`, `deleted`, `restoring`, `restored`则分别在删除以及恢复时触发。 
 
 - `ing`结尾的事件, 均可以阻止事件的进行
 

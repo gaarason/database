@@ -4,7 +4,7 @@ Eloquent ORM for Java
 * [注册bean](/document/bean.md)
 * [数据映射](/document/mapping.md)
 * [数据模型](/document/model.md)
-* [查询结果集](/document/model.md)
+* [查询结果集](/document/record.md)
 * [查询构造器](/document/query.md)
     * [原生语句](#原生语句)
         * [原生查询](#原生查询)
@@ -20,6 +20,15 @@ Eloquent ORM for Java
     * [随机获取](#随机获取)
     * [select](#select)
     * [where](#where)
+        * [字段与值的比较](#字段与值的比较)
+        * [字段之间的比较](#字段之间的比较)
+        * [字段(不)在两值之间](#字段(不)在两值之间)
+        * [字段(不)在范围内](#字段(不)在范围内)
+        * [字段(不)为null](#字段(不)为null)
+        * [子查询](#子查询)
+            * [且](#且)
+            * [或](#或)
+        * [条件为真(假)](#条件为真(假))
     * [having](#having)
     * [order](#order)
     * [group](#group)
@@ -43,75 +52,21 @@ Eloquent ORM for Java
     
 ## 总览
 
-构造sql  
-以下示例
-
-```java
-package gaarason.database.models;
-
-import gaarason.database.eloquent.Column;
-import gaarason.database.eloquent.Primary;
-import gaarason.database.eloquent.Record;
-import gaarason.database.eloquent.Table;
-import gaarason.database.models.base.MasterSlaveModel;
-import gaarason.database.models.base.SingleModel;
-import lombok.Data;
-import org.springframework.stereotype.Component;
-
-import java.util.Date;
-
-@Component
-public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
-
-    @Data
-    @Table(name = "student")
-    public static class Entity {
-        @Primary
-        private Integer id;
-
-        @Column(length = 20)
-        private String name;
-
-        private Byte age;
-
-        private Byte sex;
-
-        @Column(name = "teacher_id")
-        private Integer teacherId;
-
-        @Column(name = "created_at", insertable = false, updatable = false)
-        private Date createdAt;
-
-        @Column(name = "updated_at", insertable = false, updatable = false)
-        private Date updatedAt;
-    }
-
-    @Override
-    public void retrieved(Record<Entity> entityRecord){
-        System.out.println("已经从数据库中查询到数据");
-    }
-
-    public StudentSingleModel.Entity getById(String id){
-        return newQuery().where("id", id).firstOrFail().toObject();
-    }
-
-    public String getNameById(String id){
-        return newQuery().where("id", id).select("name").firstOrFail().toObject().getName();
-    }
-}
-```
+一下以示例的方式说明, 均来自源码中的单元测试
 
 ## 原生语句
 
 ### 原生查询
 
 ```java
-Record<StudentSingleModel.Entity> record = studentModel.newQuery()
+// 查询单条
+Record<Student> record = studentModel.newQuery()
             .query("select * from student where id=1", new ArrayList<>());
 
+// 查询多条
 List<String> parameters = new ArrayList<>();
 parameters.add("2");
-RecordList<StudentSingleModel.Entity> records = studentModel.newQuery().queryList("select * from student where sex=?", parameters);
+RecordList<Student> records = studentModel.newQuery().queryList("select * from student where sex=?", parameters);
 ```
 ### 原生更新
 ```java
@@ -120,7 +75,7 @@ parameters.add("134");
 parameters.add("testNAme");
 parameters.add("11");
 parameters.add("1");
-int execute = studentModel.newQuery()
+int num = studentModel.newQuery()
     .execute("insert into `student`(`id`,`name`,`age`,`sex`) values( ? , ? , ? , ? )", e2);
 ```
 
@@ -152,7 +107,7 @@ student.setSex(Byte.valueOf("1"));
 student.setTeacherId(0);
 student.setCreatedAt(new Date(1312312312));
 student.setUpdatedAt(new Date(1312312312));
-int insert = studentModel.newQuery().insert(entity);
+int num = studentModel.newQuery().insert(entity);
 
 // 实体批量操作
 List<Student> studentList = new ArrayList<>();
@@ -167,7 +122,7 @@ for (int i = 99; i < 1000; i++) {
     entity.setUpdatedAt(new Date());
     entityList.add(entity);
 }
-int insert = studentModel.newQuery().insert(entityList);
+int num = studentModel.newQuery().insert(entityList);
 
 // 构造语句插入
  List<String> columnNameList = new ArrayList<>();
@@ -178,15 +133,15 @@ List<String> valueList = new ArrayList<>();
 valueList.add("testNAme134");
 valueList.add("11");
 valueList.add("1");
-int insert = studentModel.newQuery().select(columnNameList).value(valueList).insert();
+int num = studentModel.newQuery().select(columnNameList).value(valueList).insert();
 
 ```
 
 ## 更新
 ```java
-int update = studentModel.newQuery().data("name", "xxcc").where("id", "3").update();
+int num = studentModel.newQuery().data("name", "xxcc").where("id", "3").update();
 
-int update2 = studentModel.newQuery().data("name", "vvv").where("id", ">", "3").update();
+int num = studentModel.newQuery().data("name", "vvv").where("id", ">", "3").update();
 
 ```
 
@@ -197,9 +152,137 @@ int update2 = studentModel.newQuery().data("name", "vvv").where("id", ">", "3").
 
 ### 默认删除
 ```java
-int id = student5Model.newQuery().where("id", "3").delete();
+int num = studentModel.newQuery().where("id", "3").delete();
 ```
 ### 强力删除
 ```java
-int id = student5Model.newQuery().where("id", "3").forceDelete();
+int num = studentModel.newQuery().where("id", "3").forceDelete();
 ```
+
+## 聚合函数
+```java
+Long count0 = studentModel.newQuery().where("sex", "1").group("age").count("id");
+
+Long count = studentModel.newQuery().where("sex", "1").count("age");
+
+String max = studentModel.newQuery().where("sex", "1").max("id");
+
+String min = studentModel.newQuery().where("sex", "1").min("id");
+
+String avg = studentModel.newQuery().where("sex", "1").avg("id");
+
+String sum = studentModel.newQuery().where("sex", "2").sum("id");
+```
+## 自增或自减
+```java
+int update = studentModel.newQuery().dataDecrement("age", 2).whereRaw("id=4").update();
+
+int update2 = studentModel.newQuery().dataIncrement("age", 4).whereRaw("id=4").update();
+
+```
+
+## 随机获取
+
+略
+
+## select
+```java
+Record<Student> record = studentModel.newQuery().select("name").select("id").first();
+
+Record<Student> record = studentModel.newQuery().select("name","id","created_at").first();
+
+Record<Student> record = studentModel.newQuery().selectFunction("concat_ws", "\"-\",`name`,`id`", "newKey").first();
+```
+
+## where
+### 字段与值的比较
+whereColumn
+```java
+Record<Student> record = studentModel.newQuery().whereRaw("id<2").first();
+Record<Student> record = studentModel.newQuery().where("id", ">", "2").first();
+Record<Student> record = studentModel.newQuery().where("id", "!=", "2").first();
+Record<Student> record = studentModel.newQuery().where("id", "2").first();
+Record<Student> record = studentModel.newQuery().where("name", "like", "%明%").first();
+```
+### 字段之间的比较
+whereColumn
+```java
+Record<Student> record = studentModel.newQuery().whereColumn("id", ">", "sex").first();
+```
+### 字段(不)在两值之间
+whereBetween
+whereNotBetween
+```java
+RecordList<Student> records = studentModel.newQuery().whereBetween("id", "3", "5").get();
+
+RecordList<Student> records = studentModel.newQuery().whereNotBetween("id", "3", "5").get();
+```
+### 字段(不)在范围内
+whereIn
+whereNotIn
+```java
+List<Object> idList = new ArrayList<>();
+idList.add("4");
+idList.add("5");
+idList.add("6");
+idList.add("7");
+RecordList<Student> records = studentModel.newQuery().whereIn("id", idList).get();
+
+RecordList<Student> records = studentModel.newQuery().whereNotIn("id", idList).get();
+
+RecordList<Student> records = studentModel.newQuery().whereIn("id",
+    builder -> builder.select("id").where("age", ">=", "11")
+).andWhere(
+    builder -> builder.whereNotIn("sex",
+        builder1 -> builder1.select("sex").where("sex", "1")
+    )
+).get()
+```
+whereNotIn
+
+### 字段(不)为null
+whereNull
+whereNotNull
+```java
+RecordList<Student> records = studentModel.newQuery().whereNull("id").get();
+
+RecordList<Student> records = studentModel.newQuery().whereNotNull("id").get();
+```
+
+### 子查询
+
+子查询可以无限相互嵌套
+
+#### 且
+andWhere
+```java
+RecordList<Student> records = studentModel.newQuery().where("id", "3").andWhere(
+    (builder) -> builder.whereRaw("id=4")
+).get();
+```
+#### 或
+orWhere
+```java
+RecordList<Student> records = studentModel.newQuery().where("id", "3").orWhere(
+    (builder) -> builder.whereRaw("id=4")
+).get();
+```
+
+### 条件为真(假)
+whereExists
+whereNotExists
+```java
+RecordList<Student> records = studentModel.newQuery()
+.select("id", "name", "age")
+.whereBetween("id", "1", "2")
+.whereExists(
+    builder -> builder.select("id", "name", "age").whereBetween("id", "2", "3")
+)
+.whereNotExists(
+    builder -> builder.select("id", "name", "age").whereBetween("id", "2", "4")
+)
+.get();
+```
+## having
+
+
