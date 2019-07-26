@@ -17,7 +17,6 @@ Eloquent ORM for Java
         * [强力删除](#强力删除)
     * [聚合函数](#聚合函数)
     * [自增或自减](#自增或自减)
-    * [随机获取](#随机获取)
     * [select](#select)
     * [where](#where)
         * [字段与值的比较](#字段与值的比较)
@@ -34,22 +33,17 @@ Eloquent ORM for Java
     * [group](#group)
     * [join](#join)
     * [limit](#limit)
-    * [table](#table)
+    * [from](#from)
     * [data](#data)
     * [union](#union)
-    * [index](#index)
-    * [lock](#lock)
-    * [数据库配置文件](#数据库配置文件)
-    * [参数绑定](#参数绑定)
-    * [闭包事务](#闭包事务)
-        * [多连接嵌套事务](#闭包事务)
-    * [ORM](#ORM)
-    * [debug](#debug)
-    * [where子查询](#where子查询)
-    * [分块查询](#分块查询)
-    * [预处理语句复用](#预处理语句复用)
-    * [注册查询方法](#注册查询方法)
-    
+    * [事务](#事务)
+        * [手动事物](#手动事物)
+        * [闭包事务](#闭包事务)
+        * [共享锁与排他锁](#共享锁与排他锁)
+    * [分页](#分页)
+        * [快速分页](#快速分页)
+        * [总数分页](#总数分页)
+
 ## 总览
 
 一下以示例的方式说明, 均来自源码中的单元测试
@@ -134,29 +128,44 @@ valueList.add("testNAme134");
 valueList.add("11");
 valueList.add("1");
 int num = studentModel.newQuery().select(columnNameList).value(valueList).insert();
-
 ```
 
 ## 更新
+当一个更新语句没有`where`时,将会抛出`ConfirmOperationException`
 ```java
 int num = studentModel.newQuery().data("name", "xxcc").where("id", "3").update();
 
 int num = studentModel.newQuery().data("name", "vvv").where("id", ">", "3").update();
 
+// 抛出`ConfirmOperationException`
+studentModel.newQuery().data("name", "xxcc").update();
+
+studentModel.newQuery().data("name", "xxcc").whereRaw(1).update();
 ```
 
 ## 删除
 
 当前model如果非软删除, 则`默认删除`与`强力删除`效果一致  
-`软删除`定义以及启用,请看[数据模型](/document/model.md)
+`软删除`定义以及启用,请看[数据模型](/document/model.md)  
+当一个删除语句没有`where`时,将会抛出`ConfirmOperationException`
 
 ### 默认删除
 ```java
 int num = studentModel.newQuery().where("id", "3").delete();
+
+// 抛出`ConfirmOperationException`
+studentModel.newQuery().delete();
+
+studentModel.newQuery().whereRaw(1).update();
 ```
 ### 强力删除
 ```java
 int num = studentModel.newQuery().where("id", "3").forceDelete();
+
+// 抛出`ConfirmOperationException`
+studentModel.newQuery().forceDelete();
+
+studentModel.newQuery().whereRaw(1).forceDelete();
 ```
 
 ## 聚合函数
@@ -178,7 +187,6 @@ String sum = studentModel.newQuery().where("sex", "2").sum("id");
 int update = studentModel.newQuery().dataDecrement("age", 2).whereRaw("id=4").update();
 
 int update2 = studentModel.newQuery().dataIncrement("age", 4).whereRaw("id=4").update();
-
 ```
 
 ## 随机获取
@@ -187,7 +195,7 @@ int update2 = studentModel.newQuery().dataIncrement("age", 4).whereRaw("id=4").u
 
 ## select
 ```java
-Record<Student> record = studentModel.newQuery().select("name").select("id").first();
+Record<Student> record = studentModel.newQuery().select("name").select("id").select("id").first();
 
 Record<Student> record = studentModel.newQuery().select("name","id","created_at").first();
 
@@ -285,4 +293,119 @@ RecordList<Student> records = studentModel.newQuery()
 ```
 ## having
 
+类似于where, 暂略
 
+## order
+```java
+RecordList<Student> records = studentModel.newQuery().orderBy("id", OrderBy.DESC).get();
+```
+
+## group
+
+因为在[注册bean](/document/bean.md)时默认设置了`SESSION SQL_MODE`, 所以`gourp`的结果类似`Oracle`
+
+```java
+RecordList<Student> records = studentModel.newQuery()
+.select("id", "age")
+.where("id", "&", "1")
+.orderBy("id", OrderBy.DESC)
+.group("sex", "id", "age")
+.get();
+```
+## join
+
+因为在`select`中使用的别名, 所以在使用`toObject`时无法正确匹配实例属性,因此建议使用`toMap`
+
+```java
+RecordList<Student> records = studentModel.newQuery()
+.select("student.*", "t.age as age2")
+.join("student as t", "student.id", "=", "t.age")
+.get();
+```
+
+## limit
+```java
+RecordList<Student> records = studentModel.newQuery().orderBy("id", OrderBy.DESC).limit(2, 3).get();
+
+RecordList<Student> records = studentModel.newQuery().orderBy("id", OrderBy.DESC).limit(2).get();
+```
+## from
+
+用以指定表名,大多数情况下可以使用默认值
+
+```java
+RecordList<Student> records = studentModel.newQuery().from("student").get();
+```
+## data
+```java
+Map<String, String> map = new HashMap<>();
+map.put("name", "gggg");
+map.put("age", "7");
+int num = studentModel.newQuery().data(map).where("id", "3").update();
+
+int num = studentModel.newQuery().data("name","小明").data("age","7").where("id", "3").update();
+```
+## union
+```java
+RecordList<Student> records = studentModel.newQuery()
+.unionAll((builder -> builder.where("id", "2")))
+.union((builder -> builder.where("id", "7")))
+.firstOrFail();
+```
+
+## 事务
+
+`隔离级别`设置在[注册bean](/document/bean.md)的`SESSION SQL_MODE`,默认可重复读   
+`传播性`为同数据库连接不可嵌套, 不同的数据库连接可以任意嵌套  
+
+**后续有**
+
+### 手动事物
+```java
+// 开启事物
+studentModel.newQuery().begin();
+
+// do something
+studentModel.newQuery().where("id", "1").data("name", "dddddd").update();
+StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
+
+// 回滚
+studentModel.newQuery().rollBack();
+
+// 提交
+studentModel.newQuery().commit();
+```
+### 闭包事物
+
+- 异常自动回滚
+- 语义表达性更直观
+- 自动处理死锁异常
+
+```java
+// 开启事物
+studentModel.newQuery().transaction(() -> {
+    // do something
+    studentModel.newQuery().where("id", "1").data("name", "dddddd").update();
+    StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
+}, 3);
+```
+### 共享锁与排他锁
+```java
+studentModel.newQuery().transaction(()->{
+    studentModel.newQuery().where("id", "3").sharedLock().get();
+}, 3);
+```
+```java
+studentModel.newQuery().transaction(()->{
+    studentModel.newQuery().where("id", "3").lockForUpdate().get();
+}, 3);
+```
+## 分页
+### 快速分页
+```java
+Paginate<Student> paginate = studentModel.newQuery().orderBy("id").simplePaginate(1, 3);
+```
+### 总数分页
+```java
+Paginate<Student> paginate = studentModel.newQuery().orderBy("id").paginate(1, 4);
+```

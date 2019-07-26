@@ -257,7 +257,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         try {
             return executeSql(connection, sql, parameters).executeUpdate();
         } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
+            throw new SQLRuntimeException(sql, parameters, e.getMessage(), e);
         } finally {
             if (!inTransaction()) {
                 connectionClose(connection);

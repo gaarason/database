@@ -548,8 +548,8 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     @Test
     public void 条件_andWhere与orWhere无线嵌套() {
         List<StudentSingleModel.Entity> entityList1 = studentModel.newQuery().where("id", "3").orWhere(
-            (builder) -> builder.where("age", ">", "11").where("id", "7").andWhere(
-                (builder2) -> builder2.whereBetween("id", "4", "10").where("age", ">", "11")
+            builder -> builder.where("age", ">", "11").where("id", "7").andWhere(
+                builder2 -> builder2.whereBetween("id", "4", "10").where("age", ">", "11")
             )
         ).from("student").select("id", "name").get().toObjectList();
         Assert.assertEquals(entityList1.size(), 2);
@@ -845,7 +845,19 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 事物() {
+    public void 事物_普通() {
+        studentModel.newQuery().begin();
+        studentModel.newQuery().where("id", "1").data("name", "dddddd").update();
+        StudentSingleModel.Entity entity = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
+        Assert.assertEquals(entity.getName(), "dddddd");
+        studentModel.newQuery().rollBack();
+
+        StudentSingleModel.Entity entity2 = studentModel.newQuery().where("id", "1").firstOrFail().toObject();
+        Assert.assertNotEquals(entity2.getName(), "dddddd");
+    }
+
+    @Test
+    public void 事物_闭包() {
         thrown.expect(RuntimeException.class);
         studentModel.newQuery().transaction(() -> {
             studentModel.newQuery().where("id", "1").data("name", "dddddd").update();
@@ -1066,12 +1078,16 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 事物_lock_in_share_mode() {
-
+        studentModel.newQuery().transaction(()->{
+            studentModel.newQuery().where("id", "3").sharedLock().get();
+        }, 3);
     }
 
     @Test
     public void 事物_for_update() {
-
+        studentModel.newQuery().transaction(()->{
+            studentModel.newQuery().where("id", "3").lockForUpdate().get();
+        }, 3);
     }
 
     @Test
