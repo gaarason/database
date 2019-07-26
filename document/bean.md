@@ -8,6 +8,8 @@ Eloquent ORM for Java
             * [读写分离](#读写分离)
         * [多连接](#多连接)
         * [使用ProxyDataSource](#使用ProxyDataSource)
+        
+    * [非spring boot](#非spring)
 * [数据映射](/document/mapping.md)
 * [数据模型](/document/model.md)
 * [查询结果集](/document/record.md)
@@ -437,4 +439,49 @@ public class StudentSingle2Model extends Model<StudentSingle2Model.Entity> {
     }
 }
 
+```
+## 非spring
+```java
+
+    // 主要连接
+    private DataSource dataSourceMaster0() {
+        DruidDataSource druidDataSource = new DruidDataSource();
+        druidDataSource.setUrl(
+            "jdbc:mysql://sakya.local/test_master_0?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=true&autoReconnect=true&serverTimezone=Asia/Shanghai");
+        druidDataSource.setDbType("com.alibaba.druid.pool.DruidDataSource");
+        druidDataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        druidDataSource.setUsername("root");
+        druidDataSource.setPassword("root");
+        return druidDataSource;
+    }
+
+    // 主要连接列表
+    private List<DataSource> dataSourceMasterList() {
+        List<DataSource> dataSources = new ArrayList<>();
+        dataSources.add(dataSourceMaster0());
+        return dataSources;
+    }
+
+    // DataSource代理
+    private ProxyDataSource proxyDataSource() {
+        List<DataSource> dataSources = dataSourceMasterList();
+        return new ProxyDataSource(dataSources);
+    }
+
+    // 声明模型
+    public static class ToolModel extends Model<ToolModel.Inner> {
+        private ProxyDataSource proxyDataSource;
+
+        public ToolModel(ProxyDataSource dataSource) {
+            proxyDataSource = dataSource;
+        }
+
+        public ProxyDataSource getProxyDataSource() {
+            return proxyDataSource;
+        }
+
+        public static class Inner {
+
+        }
+    }
 ```
