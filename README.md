@@ -6,6 +6,7 @@ Eloquent ORM for Java
 * [数据模型](/document/model.md)
 * [查询结果集](/document/record.md)
 * [查询构造器](/document/query.md)
+* [反向生成代码](/document/generate.md)
 
 
 - 如果希望以如下的方式在程序中查询数据, 那么这个项目不会让你失望 !

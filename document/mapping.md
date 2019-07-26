@@ -12,11 +12,13 @@ Eloquent ORM for Java
 * [数据模型](/document/model.md)
 * [查询结果集](/document/record.md)
 * [查询构造器](/document/query.md)
+* [反向生成代码](/document/generate.md)
 ## 总览
 
 数据映射是用将数据库字段与java对象进行相互转换的必要手段, 理解为`数据`  
-任意一个普通pojo对象即可, 下面是一个例子  
+[反向生成代码](/document/generate.md)  
 **数据类型应该使用包装类型替代基本类型 例如使用`Integer`替代`int`**  
+任意一个普通pojo对象即可, 下面是一个例子  
 
 ```java
 package temp.pojo;

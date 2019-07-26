@@ -14,6 +14,7 @@ Eloquent ORM for Java
         * [新增](#新增)
         * [删除](#删除)
 * [查询构造器](/document/query.md)
+* [反向生成代码](/document/generate.md)
     
 ## 总览
 
