@@ -4,6 +4,7 @@ import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.Grammar;
 import gaarason.database.contracts.builder.OrderBy;
 import gaarason.database.contracts.builder.*;
+import gaarason.database.contracts.function.Chunk;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.*;
 import gaarason.database.exception.*;
@@ -291,6 +292,26 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         return queryList(sql, parameterList);
     }
 
+    @Override
+    public void dealChunk(Chunk<T> chunk) throws SQLRuntimeException{
+        // sql组装执行
+        String       sql           = grammar.generateSql(SqlType.SELECT);
+        List<String> parameterList = grammar.getParameterList(SqlType.SELECT);
+        // 执行
+        Connection connection = theConnection(false);
+        try {
+            ResultSet resultSet = executeSql(connection, sql, parameterList).executeQuery();
+            RecordFactory.dealChunk(chunk, entityClass, model, resultSet);
+        } catch (SQLException e) {
+            throw new SQLRuntimeException(e.getMessage(), e);
+        } finally {
+            if (!inTransaction()) {
+                connectionClose(connection);
+            }
+        }
+    }
+
+
     /**
      * 执行sql, 返回收影响的行数
      * @return 影响的行数
@@ -351,7 +372,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         // 日志记录
         model.log(sql, parameterList);
         // 预执行
-        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
         // 参数绑定
         int i = 1;
         for (String parameter : parameterList) {

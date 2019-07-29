@@ -9,6 +9,7 @@ import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.NestedTransactionException;
 import gaarason.database.exception.SQLRuntimeException;
 import gaarason.database.models.*;
+import gaarason.database.query.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -71,7 +72,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
                     .firstOrFail()
                     .toObject();
                 SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                System.out.println(entityFirst);
+//                System.out.println(entityFirst);
                 Assert.assertNotNull(entityFirst);
 //                Assert.assertEquals(134, entityFirst.getId().intValue());
                 Assert.assertEquals(11, entityFirst.getAge().intValue());
@@ -347,6 +348,58 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         Assert.assertEquals(entity2.getTeacherId().intValue(), 0);
         Assert.assertEquals(entity2.getCreatedAt().toString(), "2009-03-14 17:15:23.0");
         Assert.assertEquals(entity2.getUpdatedAt().toString(), "2010-04-24 22:11:03.0");
+    }
+
+    @Test
+    public void 查询_多条记录_非分块() throws InterruptedException {
+        Runtime r = Runtime.getRuntime();
+        r.gc();
+        long startMem = r.totalMemory(); // 开始时内存
+        System.out.println("开始时内存: " + startMem);
+        // 数据库数据有限,此处模拟大数据
+        新增_多线程_非entity方式();
+        System.out.println("插入数据后的内存: " + r.totalMemory());
+        Builder<StudentSingleModel.Entity> queryBuilder = studentModel.newQuery();
+        for(int i = 0 ; i < 100 ; i++){
+            queryBuilder.unionAll((builder -> builder));
+        }
+        System.out.println("构造sql后的内存: " +r.totalMemory());
+        RecordList<StudentSingleModel.Entity> records = queryBuilder.get();
+        System.out.println("执行sql后的内存: " +r.totalMemory());
+        int                                   size    = records.size();
+        System.out.println(size);
+        for (Record<StudentSingleModel.Entity> record : records) {
+            // do something
+        }
+
+        long orz = r.totalMemory() - startMem; // 剩余内存 现在
+        System.out.println("最后的内存: " +r.totalMemory());
+        System.out.println("执行消耗的内存差: " + orz);
+    }
+
+    @Test
+    public void 查询_多条记录_分块() throws InterruptedException {
+        Runtime r = Runtime.getRuntime();
+        r.gc();
+        long startMem = r.totalMemory(); // 开始时内存
+        System.out.println("开始时内存: " + startMem);
+        // 数据库数据有限,此处模拟大数据
+        新增_多线程_非entity方式();
+        System.out.println("插入数据后的内存: " + r.totalMemory());
+        Builder<StudentSingleModel.Entity> queryBuilder = studentModel.newQuery();
+        for(int i = 0 ; i < 100 ; i++){
+            queryBuilder.unionAll((builder -> builder));
+        }
+        System.out.println("构造sql后的内存: " +r.totalMemory());
+        queryBuilder.dealChunk((record) -> {
+            // do something
+            StudentSingleModel.Entity entity = record.toObject();
+        });
+        System.out.println("执行sql后的内存: " +r.totalMemory());
+
+        long orz = r.totalMemory() - startMem; // 剩余内存 现在
+        System.out.println("最后的内存: " +r.totalMemory());
+        System.out.println("执行消耗的内存差: " + orz);
     }
 
     @Test

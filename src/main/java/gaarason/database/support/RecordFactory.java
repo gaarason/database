@@ -1,5 +1,6 @@
 package gaarason.database.support;
 
+import gaarason.database.contracts.function.Chunk;
 import gaarason.database.eloquent.Model;
 import gaarason.database.eloquent.Record;
 import gaarason.database.eloquent.RecordList;
@@ -21,6 +22,14 @@ public class RecordFactory {
             recordList.add(new Record<>(entityClass, model, JDBCResultToMap(resultSetMetaData, resultSet)));
         }
         return recordList;
+    }
+
+    public static <T> void dealChunk(Chunk<T> chunk, Class<T> entityClass, Model<T> model, ResultSet resultSet)
+        throws SQLException {
+        final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        while (resultSet.next()) {
+            chunk.deal(new Record<>(entityClass, model, JDBCResultToMap(resultSetMetaData, resultSet)));
+        }
     }
 
     public static <T> Record<T> newRecord(Class<T> entityClass, Model<T> model, ResultSet resultSet)

@@ -43,10 +43,10 @@ public class StudentSingleModel extends SingleModel<StudentSingleModel.Entity> {
         return false;
     }
 
-    @Override
-    public void retrieved(Record<Entity> entityRecord){
-        System.out.println("已经从数据库中查询到数据");
-    }
+//    @Override
+//    public void retrieved(Record<Entity> entityRecord){
+//        System.out.println("已经从数据库中查询到数据");
+//    }
 
     public StudentSingleModel.Entity getById(String id){
         return newQuery().where("id", id).firstOrFail().toObject();

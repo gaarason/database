@@ -2,6 +2,7 @@ package gaarason.database.query;
 
 import gaarason.database.connections.ProxyDataSource;
 import gaarason.database.contracts.Grammar;
+import gaarason.database.contracts.function.Chunk;
 import gaarason.database.contracts.function.GenerateSqlPart;
 import gaarason.database.eloquent.*;
 import gaarason.database.exception.EntityNotFoundException;

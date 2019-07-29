@@ -10,6 +10,7 @@ Eloquent ORM for Java
         * [原生查询](#原生查询)
         * [原生更新](#原生更新)
     * [获取](#获取)
+        * [分块处理](#分块处理)
     * [插入](#插入)
     * [更新](#更新)
     * [删除](#删除)
@@ -88,8 +89,15 @@ Record<Student> record = studentModel.findOrFail("9")
 
 // select * from student where `age`<9
 RecordList<Student> records = studentModel.where("age","<","9").get();
-
 ```
+### 分块处理
+```java
+studentModel.where("age","<","9").dealChunk((record) -> {
+    // do something
+    Student student = record.toObject();
+});
+```
+
 ## 插入
 
 ```java

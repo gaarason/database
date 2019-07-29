@@ -1,5 +1,6 @@
 package gaarason.database.contracts.builder;
 
+import gaarason.database.contracts.function.Chunk;
 import gaarason.database.eloquent.Record;
 import gaarason.database.eloquent.RecordList;
 import gaarason.database.exception.EntityNotFoundException;
@@ -16,6 +17,8 @@ public interface Execute<T> {
     Record<T> firstOrFail() throws EntityNotFoundException, SQLRuntimeException;
 
     RecordList<T> get() throws SQLRuntimeException;
+
+    void dealChunk(Chunk<T> chunk) throws SQLRuntimeException;
 
     int insert() throws SQLRuntimeException;
 
