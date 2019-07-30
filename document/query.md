@@ -26,8 +26,8 @@ Eloquent ORM for Java
         * [字段(不)在范围内](#字段(不)在范围内)
         * [字段(不)为null](#字段(不)为null)
         * [子查询](#子查询)
-            * [且](#且)
-            * [或](#或)
+        * [且](#且)
+        * [或](#或)
         * [条件为真(假)](#条件为真(假))
     * [having](#having)
     * [order](#order)
@@ -44,6 +44,8 @@ Eloquent ORM for Java
     * [分页](#分页)
         * [快速分页](#快速分页)
         * [总数分页](#总数分页)
+    * [功能](#功能)
+        * [随机抽样](#随机抽样)
 * [反向生成代码](/document/generate.md)
 
 ## 总览
@@ -267,17 +269,29 @@ RecordList<Student> records = studentModel.newQuery().whereNotNull("id").get();
 ```
 
 ### 子查询
+```java
+List<Object> ins = new ArrayList<>();
+ins.add("1");
+ins.add("2");
+ins.add("3");
+RecordList<Student> records = studentModel.newQuery()
+.where("age", "!=", "99")
+.whereSubQuery("id", "in", builder -> builder.select("id").whereIn("id", ins))
+.get();
 
-子查询可以无限相互嵌套
-
-#### 且
+RecordList<Student> records = studentModel.newQuery()
+.where("age", "!=", "99")
+.whereSubQuery("id", "in", "select id from student where id = 3")
+.get();
+```
+### 且
 andWhere
 ```java
 RecordList<Student> records = studentModel.newQuery().where("id", "3").andWhere(
     (builder) -> builder.whereRaw("id=4")
 ).get();
 ```
-#### 或
+### 或
 orWhere
 ```java
 RecordList<Student> records = studentModel.newQuery().where("id", "3").orWhere(
@@ -417,4 +431,15 @@ Paginate<Student> paginate = studentModel.newQuery().orderBy("id").simplePaginat
 ### 总数分页
 ```java
 Paginate<Student> paginate = studentModel.newQuery().orderBy("id").paginate(1, 4);
+```
+## 功能
+
+### 随机抽样
+inRandomOrder()  
+接收一个参数,优先选用连续计数类型字段(均匀分布的自增主键最佳).  
+在300w数据量下,效率约是`order by rand()`的5倍,任何情况下均有优越表现
+```java
+studentModel.newQuery().where("sex", "1").orderBy("RAND()").limit(5).get().toObjectList();
+
+studentModel.newQuery().where("sex", "1").inRandomOrder("id").limit(5).get().toObjectList();
 ```

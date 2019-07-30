@@ -32,6 +32,24 @@ public interface Where<T> {
     Builder<T> where(String column, String value);
 
     /**
+     * 条件子查询
+     * @param column      列名
+     * @param symbol      关系符号
+     * @param completeSql 完整sql
+     * @return 查询构建器
+     */
+    Builder<T> whereSubQuery(String column, String symbol, String completeSql);
+
+    /**
+     * 条件子查询
+     * @param column  列名
+     * @param symbol  关系符号
+     * @param closure 闭包
+     * @return 查询构建器
+     */
+    Builder<T> whereSubQuery(String column, String symbol, GenerateSqlPart<T> closure);
+
+    /**
      * 列值在范围内
      * @param column    列名
      * @param valueList 值所在的list
@@ -41,8 +59,8 @@ public interface Where<T> {
 
     /**
      * 列值在范围内(子查询)
-     * @param column  列名
-     * @param sql 完整sql eg:select id from student where age>10
+     * @param column 列名
+     * @param sql    完整sql eg:select id from student where age>10
      * @return 查询构建器
      */
     Builder<T> whereInRaw(String column, String sql);
@@ -65,8 +83,8 @@ public interface Where<T> {
 
     /**
      * 列值不在范围内(子查询)
-     * @param column  列名
-     * @param sql 完整sql eg:select id from student where age>10
+     * @param column 列名
+     * @param sql    完整sql eg:select id from student where age>10
      * @return 查询构建器
      */
     Builder<T> whereNotInRaw(String column, String sql);
@@ -120,10 +138,10 @@ public interface Where<T> {
 
     /**
      * exists一个闭包
-     * @param Closure 闭包
+     * @param closure 闭包
      * @return 查询构建器
      */
-    Builder<T> whereExists(GenerateSqlPart<T> Closure);
+    Builder<T> whereExists(GenerateSqlPart<T> closure);
 
     /**
      * not exists一个闭包
@@ -134,10 +152,10 @@ public interface Where<T> {
 
     /**
      * not exists一个完整sql
-     * @param Closure 完整sql
+     * @param closure 完整sql
      * @return 查询构建器
      */
-    Builder<T> whereNotExists(GenerateSqlPart<T> Closure);
+    Builder<T> whereNotExists(GenerateSqlPart<T> closure);
 
     /**
      * 比较字段与字段

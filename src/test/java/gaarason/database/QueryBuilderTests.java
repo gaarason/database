@@ -146,9 +146,9 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     @Test
     public void 新增_多条记录() {
         List<StudentSingleModel.Entity> entityList = new ArrayList<>();
-        for (int i = 99; i < 1000; i++) {
+        for (int i = 99; i < 10000; i++) {
             StudentSingleModel.Entity entity = new StudentSingleModel.Entity();
-            entity.setId(i);
+//            entity.setId(i);
             entity.setName("姓名");
             entity.setAge(Byte.valueOf("13"));
             entity.setSex(Byte.valueOf("1"));
@@ -158,7 +158,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             entityList.add(entity);
         }
         int insert = studentModel.newQuery().insert(entityList);
-        Assert.assertEquals(insert, 901);
+        Assert.assertEquals(insert, 9901);
 
 //        List<StudentSingleModel.Entity> entityList1 =
         RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
@@ -166,7 +166,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             .orderBy("id", OrderBy.DESC)
             .get();
         Assert.assertEquals(records.size(), 51);
-        Assert.assertEquals(records.get(0).getEntity().getTeacherId().intValue(), 1050);
+//        Assert.assertEquals(records.get(0).getEntity().getTeacherId().intValue(), 1050);
     }
 
     @Test
@@ -606,6 +606,43 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
             )
         ).from("student").select("id", "name").get().toObjectList();
         Assert.assertEquals(entityList1.size(), 2);
+    }
+
+    @Test
+    public void 条件_子查询_闭包(){
+        List<Object> ins = new ArrayList<>();
+        ins.add("1");
+        ins.add("2");
+        ins.add("3");
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
+            .where("age", "!=", "99")
+            .whereSubQuery("id", "in", builder -> builder.select("id").whereIn("id", ins))
+            .get();
+        Assert.assertEquals(records.size(), 3);
+    }
+
+    @Test
+    public void 条件_子查询_字符串(){
+        RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
+            .where("age", "!=", "99")
+            .whereSubQuery("id", "in", "select id from student where id = 3")
+            .get();
+        Assert.assertEquals(records.size(), 1);
+    }
+
+    @Test
+    public void 随机获取() throws InterruptedException {
+        // 数据库数据有限,此处模拟大数据
+        for (int i = 0; i< 10; i++)
+            新增_多条记录();
+        System.out.println("总数据量 : " + studentModel.newQuery().count("id"));
+
+        long                            l1  = System.currentTimeMillis();
+        studentModel.newQuery().where("sex", "1").orderBy("RAND()").limit(5).get().toObjectList();
+        System.out.println("RAND()耗时 : " + (System.currentTimeMillis() - l1));
+        long                            l2  = System.currentTimeMillis();
+        studentModel.newQuery().where("sex", "1").inRandomOrder("id").limit(5).get().toObjectList();
+        System.out.println("inRandomOrder()耗时 : " + (System.currentTimeMillis() - l2));
     }
 
     @Test

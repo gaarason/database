@@ -1,7 +1,6 @@
 package gaarason.database.utils;
 
 import gaarason.database.contracts.Grammar;
-import org.springframework.lang.Nullable;
 
 import java.util.List;
 
@@ -114,6 +113,8 @@ public class FormatUtil {
                 String table  = someElse.substring(0, whereIsPoint); // eg: order
                 String column = someElse.replace(table + '.', ""); // eg: amount
                 temp = column.equals("*") ? '`' + table + "`." + column : '`' + table + "`.`" + column + '`';
+            } else if ("".equals(someElse)) {
+                temp = "";
             } else {
                 temp = '`' + someElse + '`';
             }

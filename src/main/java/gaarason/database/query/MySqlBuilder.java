@@ -44,6 +44,19 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
+    public Builder<T> whereSubQuery(String column, String symbol, String completeSql) {
+        String sqlPart = FormatUtil.column(column) + symbol + FormatUtil.bracket(completeSql);
+        return whereRaw(sqlPart);
+    }
+
+    @Override
+    public Builder<T> whereSubQuery(String column, String symbol, GenerateSqlPart<T> closure) {
+        String completeSql = generateSql(closure);
+        String sqlPart = FormatUtil.column(column) + symbol + completeSql;
+        return whereRaw(sqlPart);
+    }
+
+    @Override
     public Builder<T> whereIn(String column, List<Object> valueList) {
         String sqlPart = FormatUtil.column(column) + "in" + FormatUtil.bracket(formatValue(valueList));
         return whereRaw(sqlPart);
@@ -111,8 +124,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> whereExists(GenerateSqlPart<T> Closure) {
-        String sql = generateSql(Closure);
+    public Builder<T> whereExists(GenerateSqlPart<T> closure) {
+        String sql = generateSql(closure);
         return whereExistsRaw(sql);
     }
 
@@ -123,8 +136,8 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
-    public Builder<T> whereNotExists(GenerateSqlPart<T> Closure) {
-        String sql = generateSql(Closure);
+    public Builder<T> whereNotExists(GenerateSqlPart<T> closure) {
+        String sql = generateSql(closure);
         return whereNotExistsRaw(sql);
     }
 
@@ -318,6 +331,15 @@ public class MySqlBuilder<T> extends Builder<T> {
     }
 
     @Override
+    public Builder<T> selectFunction(String function, GenerateSqlPart<T> closure, @Nullable String alias) {
+        String completeSql = generateSql(closure);
+        String sqlPart = function + FormatUtil.bracket(completeSql) + (alias == null ? "" :
+            " as " + FormatUtil.quotes(alias));
+        grammar.pushSelect(sqlPart);
+        return this;
+    }
+
+    @Override
     public Builder<T> orderBy(String column, OrderBy type) {
         String sqlPart = FormatUtil.column(column) + " " + type.getOperation();
         grammar.pushOrderBy(sqlPart);
@@ -375,6 +397,13 @@ public class MySqlBuilder<T> extends Builder<T> {
     public Record<T> firstOrFail() throws SQLRuntimeException, EntityNotFoundException {
         limit(1);
         return querySql();
+    }
+
+    @Override
+    public String toSql(SqlType sqlType) {
+        String       sql           = grammar.generateSql(sqlType);
+        List<String> parameterList = grammar.getParameterList(sqlType);
+        return String.format(sql.replace(" ? ", "\"%s\""), parameterList.toArray());
     }
 
     @Override
@@ -599,5 +628,19 @@ public class MySqlBuilder<T> extends Builder<T> {
                 FormatUtil.column(column1) + symbol + FormatUtil.column(column2);
         grammar.pushJoin(sqlPart);
         return this;
+    }
+
+    @Override
+    public Builder<T> inRandomOrder(String field) {
+        String key = field;
+        Builder sameSubBuilder1 = model.newQuery();
+        Builder sameSubBuilder2 = model.newQuery();
+        String maxSql = sameSubBuilder1.selectFunction("max", key, null).toSql(SqlType.SELECT);
+        String minSql = sameSubBuilder2.selectFunction("min", key, null).toSql(SqlType.SELECT);
+        String floorSql = "rand()*((" + maxSql+")-("+minSql+"))+("+minSql+")";
+        // select floor(rand()*((select max(`$key`) from $from)-(select min(`$key`) from $from))+(select min(`$key`) from $from))
+        // select * from `student` where `id`in(select floor(rand()*((select max(`id`) from `student`)-(select min
+        // (`id`) from `student`))+(select min(`id`) from `student`))) limit 5
+        return whereSubQuery(field, "in", builder -> builder.selectFunction("floor", floorSql, null));
     }
 }

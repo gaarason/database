@@ -3,6 +3,7 @@ package gaarason.database.contracts.builder;
 import gaarason.database.contracts.function.Chunk;
 import gaarason.database.eloquent.Record;
 import gaarason.database.eloquent.RecordList;
+import gaarason.database.eloquent.SqlType;
 import gaarason.database.exception.EntityNotFoundException;
 import gaarason.database.exception.SQLRuntimeException;
 import org.springframework.lang.Nullable;
@@ -10,6 +11,8 @@ import org.springframework.lang.Nullable;
 import java.util.List;
 
 public interface Execute<T> {
+
+    String toSql(SqlType sqlType);
 
     @Nullable
     Record<T> first() throws SQLRuntimeException;

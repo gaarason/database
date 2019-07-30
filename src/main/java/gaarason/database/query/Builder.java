@@ -27,7 +27,7 @@ import java.util.Map;
 @Slf4j
 abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Union<T>, Support<T>, From<T>, Execute<T>,
     Select<T>, OrderBy<T>, Limit<T>, Group<T>, Value<T>, Data<T>, Transaction<T>, Aggregates<T>, Paginator<T>,
-    Lock<T>, Native<T>, Join<T> {
+    Lock<T>, Native<T>, Join<T>, Ability<T> {
 
     /**
      * 数据实体类
@@ -52,7 +52,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
     /**
      * 数据模型
      */
-    private Model<T> model;
+    protected Model<T> model;
 
     public Builder(ProxyDataSource dataSource, Model<T> model, Class<T> entityClass) {
         this.dataSource = dataSource;
@@ -244,7 +244,7 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
             ResultSet resultSet = executeSql(connection, sql, parameters).executeQuery();
             return RecordFactory.newRecordList(entityClass, model, resultSet);
         } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
+            throw new SQLRuntimeException(sql, parameters, e.getMessage(), e);
         } finally {
             if (!inTransaction()) {
                 connectionClose(connection);
