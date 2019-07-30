@@ -6,6 +6,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ${dao_name} extends ${base_dao_name}<${pojo_name}> {
-
+${static_fields}
 }
 

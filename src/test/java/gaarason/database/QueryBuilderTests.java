@@ -1173,7 +1173,8 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 分页_快速分页() {
-        Paginate<StudentSingleModel.Entity> paginate = studentModel.newQuery().orderBy("id").simplePaginate(1, 3);
+        Paginate<StudentSingleModel.Entity> paginate =
+            studentModel.newQuery().orderBy(StudentSingleModel.id).simplePaginate(1, 3);
         System.out.println(paginate);
         Assert.assertEquals(paginate.getCurrentPage(), 1);
         Assert.assertNotNull(paginate.getFrom());

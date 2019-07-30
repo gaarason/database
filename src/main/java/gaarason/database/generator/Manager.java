@@ -44,6 +44,9 @@ abstract public class Manager {
     @Setter
     private String baseDaoName = "BaseModel";
 
+    @Setter
+    private Boolean staticField = false;
+
     private String[] disInsertable = {};
 
     private String[] disUpdatable = {};
@@ -134,6 +137,7 @@ abstract public class Manager {
         parameterMap.put("${pojo_namespace}", pojoNamespace);
         parameterMap.put("${pojo_name}", pojoName);
         parameterMap.put("${dao_name}", daoName);
+        parameterMap.put("${static_fields}", staticField ? fillStaticFieldsTemplate(tableName) : "");
 
         return fillTemplate(daoTemplateStr, parameterMap);
     }
@@ -169,6 +173,22 @@ abstract public class Manager {
         for (Map<String, Object> field : fields) {
             // 每个字段的填充
             String fieldTemplateStrReplace = fillFieldTemplate(field);
+            // 追加
+            str.append(fieldTemplateStrReplace);
+        }
+        return str.toString();
+    }
+
+    private String fillStaticFieldsTemplate(String tableName) {
+        StringBuilder str = new StringBuilder();
+        // 字段信息
+        List<Map<String, Object>> fields = descTable(tableName);
+
+        for (Map<String, Object> field : fields) {
+            String columnName = field.get("COLUMN_NAME").toString();
+            // 每个字段的填充
+            String fieldTemplateStrReplace = "    final public static String " + StringUtil.lineToHump(columnName) +
+                " = \"" + columnName + "\";\n";
             // 追加
             str.append(fieldTemplateStrReplace);
         }
