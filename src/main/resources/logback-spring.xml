@@ -6,11 +6,10 @@
 <configuration scan="true" scanPeriod="60 seconds" debug="false">
 
     <contextName>application</contextName>
-    <property name="log.path" value="log"/>
+    <property name="log.path" value="./log"/>
     <property name="log.maxHistory" value="15"/>
     <property name="log.pattern" value="%-12(%d{yyyy-MM-dd HH:mm:ss.SSS}) |-%-5level [%thread] %c [%L] -| %msg%n"/>
-    <!-- 彩色日志格式 -->
-    <property name="console.log.pattern" value="%black(%d{yyyy-MM-dd HH:mm:ss.SSS}) %highlight(%-5level) %green([%thread]) %boldMagenta(%c) %blue([%L]) %green(%msg%n)"/>
+    <property name="console.log.pattern" value="%yellow(%d{yyyy-MM-dd HH:mm:ss.SSS}) %highlight(%-5level) %green([%thread]) %boldMagenta(%c) %blue([%L]) %green(%msg%n)"/>
 
     <!--输出到控制台-->
     <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
@@ -21,6 +20,27 @@
             <pattern>${console.log.pattern}</pattern>
             <charset>UTF-8</charset>
         </encoder>
+    </appender>
+
+    <!--输出到文件all-->
+    <appender name="file_all" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${log.path}/all.log</File>
+        <!-- 日志归档 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/all/all.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <MaxHistory>2</MaxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${console.log.pattern}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <!-- 此日志文件记录非DEBUG的所有级别 -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>DEBUG</level>
+            <onMatch>DENY</onMatch>
+            <onMismatch>ACCEPT</onMismatch>
+        </filter>
     </appender>
 
     <!--输出到文件debug-->
@@ -74,7 +94,7 @@
             <pattern>${log.pattern}</pattern>
             <charset>UTF-8</charset>
         </encoder>
-        <!-- 此日志文件只记录warn及以上级别的 -->
+        <!-- 此日志文件只记录warn级别的 -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>WARN</level>
             <onMatch>ACCEPT</onMatch>
@@ -92,23 +112,39 @@
             <pattern>${log.pattern}</pattern>
             <charset>UTF-8</charset>
         </encoder>
-        <!-- 此日志文件只记录warn及以上级别的 -->
+        <!-- 此日志文件只记录error及以上级别的 -->
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
-            <!--<level>ERROR</level>-->
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
     </appender>
 
-    <root level="debug">
-        <appender-ref ref="console"/>
-        <appender-ref ref="file_debug"/>
-        <appender-ref ref="file_info"/>
-        <appender-ref ref="file_warn"/>
-        <appender-ref ref="file_error"/>
-    </root>
+    <springProfile name="dev">
+        <root level="debug">
+            <!--            <appender-ref ref="file_all"/>-->
+            <!--            <appender-ref ref="file_error"/>-->
+            <!--            <appender-ref ref="file_warn"/>-->
+            <!--            <appender-ref ref="file_info"/>-->
+            <!--            <appender-ref ref="file_debug"/>-->
+            <appender-ref ref="console"/>
+        </root>
+    </springProfile>
+    <springProfile name="test">
+        <root level="info">
+            <appender-ref ref="file_all"/>
+            <appender-ref ref="file_error"/>
+            <appender-ref ref="file_warn"/>
+            <appender-ref ref="file_info"/>
+        </root>
+    </springProfile>
+    <springProfile name="prod">
+        <root level="info">
+            <appender-ref ref="file_all"/>
+            <appender-ref ref="file_error"/>
+            <appender-ref ref="file_warn"/>
+            <appender-ref ref="file_info"/>
+        </root>
+    </springProfile>
 
-    <!--<root level="info">-->
-    <!--</root>-->
 </configuration>
