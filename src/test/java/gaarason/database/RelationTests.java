@@ -25,7 +25,11 @@ public class RelationTests extends DatabaseApplicationTests {
     @Test
     public void oneToOne() {
 
-        studentModel.newQuery().where(StudentSingle6Model.Entity.NAME, "id").firstOrFail();
+        Record<StudentSingle6Model.Entity> record = studentModel.newQuery()
+            .where(StudentSingle6Model.Entity.NAME, "id")
+            .firstOrFail();
+        StudentSingle6Model.Entity student = record.toObject();
+
     }
 
     @Test

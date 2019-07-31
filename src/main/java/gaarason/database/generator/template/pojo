@@ -13,5 +13,6 @@ import java.util.Date;
 @Table(name = "${table}")
 public class ${pojo_name} implements Serializable {
 
+${static_fields}
 ${fields}
 }

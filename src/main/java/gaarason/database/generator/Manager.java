@@ -137,7 +137,6 @@ abstract public class Manager {
         parameterMap.put("${pojo_namespace}", pojoNamespace);
         parameterMap.put("${pojo_name}", pojoName);
         parameterMap.put("${dao_name}", daoName);
-        parameterMap.put("${static_fields}", staticField ? fillStaticFieldsTemplate(tableName) : "");
 
         return fillTemplate(daoTemplateStr, parameterMap);
     }
@@ -153,6 +152,7 @@ abstract public class Manager {
         parameterMap.put("${namespace}", pojoNamespace);
         parameterMap.put("${pojo_name}", pojoName);
         parameterMap.put("${table}", tableName);
+        parameterMap.put("${static_fields}", staticField ? fillStaticFieldsTemplate(tableName) : "");
         parameterMap.put("${fields}", fillFieldsTemplate(tableName));
 
         return fillTemplate(pojoTemplateStr, parameterMap);
@@ -187,7 +187,7 @@ abstract public class Manager {
         for (Map<String, Object> field : fields) {
             String columnName = field.get("COLUMN_NAME").toString();
             // 每个字段的填充
-            String fieldTemplateStrReplace = "    final public static String " + StringUtil.lineToHump(columnName) +
+            String fieldTemplateStrReplace = "    final public static String " + columnName.toUpperCase() +
                 " = \"" + columnName + "\";\n";
             // 追加
             str.append(fieldTemplateStrReplace);

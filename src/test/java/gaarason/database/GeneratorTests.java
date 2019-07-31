@@ -45,6 +45,9 @@ public class GeneratorTests {
 
         AutoGenerator autoGenerator = new AutoGenerator(toolModel);
 
+        // 设置
+        autoGenerator.setStaticField(true);
+
         autoGenerator.run();
     }
 
