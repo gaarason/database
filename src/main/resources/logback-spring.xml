@@ -22,12 +22,12 @@
         </encoder>
     </appender>
 
-    <!--输出到文件all-->
-    <appender name="file_all" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <!--输出到文件console-->
+    <appender name="file_console" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <File>${log.path}/all.log</File>
         <!-- 日志归档 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${log.path}/all/all.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${log.path}/console/console.%d{yyyy-MM-dd}.log</fileNamePattern>
             <MaxHistory>2</MaxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
@@ -132,7 +132,7 @@
     </springProfile>
     <springProfile name="test">
         <root level="info">
-            <appender-ref ref="file_all"/>
+            <appender-ref ref="file_console"/>
             <appender-ref ref="file_error"/>
             <appender-ref ref="file_warn"/>
             <appender-ref ref="file_info"/>
@@ -140,7 +140,7 @@
     </springProfile>
     <springProfile name="prod">
         <root level="info">
-            <appender-ref ref="file_all"/>
+            <appender-ref ref="file_console"/>
             <appender-ref ref="file_error"/>
             <appender-ref ref="file_warn"/>
             <appender-ref ref="file_info"/>

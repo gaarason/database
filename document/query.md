@@ -93,7 +93,8 @@ Record<Student> record = studentModel.findOrFail("9")
 RecordList<Student> records = studentModel.where("age","<","9").get();
 ```
 ### 分块处理
-当要进行大量数据查询时,可以使用分块,他将自动拼接`limit`字段,在闭包中返回`boolean`表示是否进行下一次迭代
+当要进行大量数据查询时,可以使用分块,他将自动拼接`limit`字段,在闭包中返回`boolean`表示是否进行下一次迭代  
+因为分块查询,并发的数据更改一定会伴随数据不准确的问题,如同redis中的`keys`与`scan`
 ```java
 studentModel.where("age","<","9").dealChunk(20000, records -> {
     // do something
