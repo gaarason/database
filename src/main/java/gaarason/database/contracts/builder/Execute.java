@@ -21,7 +21,7 @@ public interface Execute<T> {
 
     RecordList<T> get() throws SQLRuntimeException;
 
-    void dealChunk(Chunk<T> chunk) throws SQLRuntimeException;
+    void dealChunk(int num, Chunk<T> chunk) throws SQLRuntimeException;
 
     int insert() throws SQLRuntimeException;
 

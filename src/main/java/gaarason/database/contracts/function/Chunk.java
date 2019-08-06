@@ -1,13 +1,13 @@
 package gaarason.database.contracts.function;
 
-import gaarason.database.eloquent.Record;
+import gaarason.database.eloquent.RecordList;
 
 @FunctionalInterface
 public interface Chunk<V> {
 
     /**
      * 分块处理
-     * @param record 结果集
+     * @param records 结果集
      */
-    void deal(Record<V> record);
+    boolean deal(RecordList<V> records);
 }

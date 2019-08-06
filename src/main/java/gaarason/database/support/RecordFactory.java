@@ -24,14 +24,6 @@ public class RecordFactory {
         return recordList;
     }
 
-    public static <T> void dealChunk(Chunk<T> chunk, Class<T> entityClass, Model<T> model, ResultSet resultSet)
-        throws SQLException {
-        final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        while (resultSet.next()) {
-            chunk.deal(new Record<>(entityClass, model, JDBCResultToMap(resultSetMetaData, resultSet)));
-        }
-    }
-
     public static <T> Record<T> newRecord(Class<T> entityClass, Model<T> model, ResultSet resultSet)
         throws SQLException, EntityNotFoundException {
         if (!resultSet.next()) {

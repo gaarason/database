@@ -293,22 +293,18 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
     }
 
     @Override
-    public void dealChunk(Chunk<T> chunk) throws SQLRuntimeException{
-        // sql组装执行
-        String       sql           = grammar.generateSql(SqlType.SELECT);
-        List<String> parameterList = grammar.getParameterList(SqlType.SELECT);
-        // 执行
-        Connection connection = theConnection(false);
-        try {
-            ResultSet resultSet = executeSql(connection, sql, parameterList).executeQuery();
-            RecordFactory.dealChunk(chunk, entityClass, model, resultSet);
-        } catch (SQLException e) {
-            throw new SQLRuntimeException(e.getMessage(), e);
-        } finally {
-            if (!inTransaction()) {
-                connectionClose(connection);
-            }
-        }
+    public void dealChunk(int num, Chunk<T> chunk) throws SQLRuntimeException {
+        int     offset = 0;
+        boolean flag;
+        do {
+            Builder cloneBuilder = clone();
+            cloneBuilder.limit(offset, num);
+            String        sql           = cloneBuilder.grammar.generateSql(SqlType.SELECT);
+            List<String>  parameterList = cloneBuilder.grammar.getParameterList(SqlType.SELECT);
+            RecordList<T> records       = queryList(sql, parameterList);
+            flag = chunk.deal(records) && (records.size() == num);
+            offset += num;
+        } while (flag);
     }
 
 
@@ -372,7 +368,8 @@ abstract public class Builder<T> implements Cloneable, Where<T>, Having<T>, Unio
         // 日志记录
         model.log(sql, parameterList);
         // 预执行
-        PreparedStatement preparedStatement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+        PreparedStatement preparedStatement = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY,
+            ResultSet.CONCUR_READ_ONLY);
         // 参数绑定
         int i = 1;
         for (String parameter : parameterList) {

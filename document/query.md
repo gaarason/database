@@ -93,10 +93,12 @@ Record<Student> record = studentModel.findOrFail("9")
 RecordList<Student> records = studentModel.where("age","<","9").get();
 ```
 ### 分块处理
+当要进行大量数据查询时,可以使用分块,他将自动拼接`limit`字段,在闭包中返回`boolean`表示是否进行下一次迭代
 ```java
-studentModel.where("age","<","9").dealChunk((record) -> {
+studentModel.where("age","<","9").dealChunk(20000, records -> {
     // do something
-    Student student = record.toObject();
+    records.toObjectList();
+    return true;
 });
 ```
 

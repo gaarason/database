@@ -384,16 +384,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         long startMem = r.totalMemory(); // 开始时内存
         System.out.println("开始时内存: " + startMem);
         // 数据库数据有限,此处模拟大数据
-        新增_多线程_非entity方式();
+        新增_多条记录();
         System.out.println("插入数据后的内存: " + r.totalMemory());
         Builder<StudentSingleModel.Entity> queryBuilder = studentModel.newQuery();
-        for(int i = 0 ; i < 100 ; i++){
-            queryBuilder.unionAll((builder -> builder));
-        }
         System.out.println("构造sql后的内存: " +r.totalMemory());
-        queryBuilder.dealChunk((record) -> {
+        queryBuilder.dealChunk(2000, records -> {
             // do something
-            StudentSingleModel.Entity entity = record.toObject();
+            records.toObjectList();
+            return true;
         });
         System.out.println("执行sql后的内存: " +r.totalMemory());
 
