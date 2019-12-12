@@ -49,7 +49,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 新增_多线程_非entity方式() throws InterruptedException {
-        int            count          = 1000;
+        int            count          = 5;
         CountDownLatch countDownLatch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
@@ -357,23 +357,23 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         long startMem = r.totalMemory(); // 开始时内存
         System.out.println("开始时内存: " + startMem);
         // 数据库数据有限,此处模拟大数据
-        新增_多线程_非entity方式();
+        新增_多条记录();
         System.out.println("插入数据后的内存: " + r.totalMemory());
         Builder<StudentSingleModel.Entity> queryBuilder = studentModel.newQuery();
-        for(int i = 0 ; i < 100 ; i++){
-            queryBuilder.unionAll((builder -> builder));
-        }
-        System.out.println("构造sql后的内存: " +r.totalMemory());
+//        for(int i = 0 ; i < 100 ; i++){
+//            queryBuilder.unionAll((builder -> builder));
+//        }
+        System.out.println("构造sql后的内存: " + r.totalMemory());
         RecordList<StudentSingleModel.Entity> records = queryBuilder.get();
-        System.out.println("执行sql后的内存: " +r.totalMemory());
-        int                                   size    = records.size();
+        System.out.println("执行sql后的内存: " + r.totalMemory());
+        int size = records.size();
         System.out.println(size);
         for (Record<StudentSingleModel.Entity> record : records) {
             // do something
         }
 
         long orz = r.totalMemory() - startMem; // 剩余内存 现在
-        System.out.println("最后的内存: " +r.totalMemory());
+        System.out.println("最后的内存: " + r.totalMemory());
         System.out.println("执行消耗的内存差: " + orz);
     }
 
@@ -387,16 +387,16 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         新增_多条记录();
         System.out.println("插入数据后的内存: " + r.totalMemory());
         Builder<StudentSingleModel.Entity> queryBuilder = studentModel.newQuery();
-        System.out.println("构造sql后的内存: " +r.totalMemory());
+        System.out.println("构造sql后的内存: " + r.totalMemory());
         queryBuilder.dealChunk(2000, records -> {
             // do something
             records.toObjectList();
             return true;
         });
-        System.out.println("执行sql后的内存: " +r.totalMemory());
+        System.out.println("执行sql后的内存: " + r.totalMemory());
 
         long orz = r.totalMemory() - startMem; // 剩余内存 现在
-        System.out.println("最后的内存: " +r.totalMemory());
+        System.out.println("最后的内存: " + r.totalMemory());
         System.out.println("执行消耗的内存差: " + orz);
     }
 
@@ -607,7 +607,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 条件_子查询_闭包(){
+    public void 条件_子查询_闭包() {
         List<Object> ins = new ArrayList<>();
         ins.add("1");
         ins.add("2");
@@ -620,7 +620,7 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     }
 
     @Test
-    public void 条件_子查询_字符串(){
+    public void 条件_子查询_字符串() {
         RecordList<StudentSingleModel.Entity> records = studentModel.newQuery()
             .where("age", "!=", "99")
             .whereSubQuery("id", "in", "select id from student where id = 3")
@@ -631,14 +631,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
     @Test
     public void 随机获取() throws InterruptedException {
         // 数据库数据有限,此处模拟大数据
-        for (int i = 0; i< 10; i++)
+        for (int i = 0; i < 10; i++)
             新增_多条记录();
         System.out.println("总数据量 : " + studentModel.newQuery().count("id"));
 
-        long                            l1  = System.currentTimeMillis();
+        long l1 = System.currentTimeMillis();
         studentModel.newQuery().where("sex", "1").orderBy("RAND()").limit(5).get().toObjectList();
         System.out.println("RAND()耗时 : " + (System.currentTimeMillis() - l1));
-        long                            l2  = System.currentTimeMillis();
+        long l2 = System.currentTimeMillis();
         studentModel.newQuery().where("sex", "1").inRandomOrder("id").limit(5).get().toObjectList();
         System.out.println("inRandomOrder()耗时 : " + (System.currentTimeMillis() - l2));
     }
@@ -965,48 +965,45 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
         CountDownLatch countDownLatch = new CountDownLatch(count);
         for (int i = 0; i < count; i++) {
             new Thread(() -> {
-                // 1层事物
-                studentModel.newQuery().transaction(() -> {
-                    studentModel.newQuery().data("name", "testttt").where("id", "9").update();
-                    // 2层事物
-                    student2Model.newQuery().transaction(() -> {
-                        student2Model.newQuery().data("name", "testttt").where("id", "4").update();
-                        try {
-                            // 3层事物
-                            student3Model.newQuery().transaction(() -> {
-                                student3Model.newQuery().where("id", "1").data("name", "dddddd").update();
-                                StudentSingle3Model.Entity entity = student3Model.newQuery()
-                                    .where("id", "1")
-                                    .firstOrFail()
-                                    .toObject();
-//                                Assert.assertEquals(entity.getName(), "dddddd");
-                                throw new RuntimeException("业务上抛了个异常");
-                            }, 1);
-                        } catch (RuntimeException e) {
-                            log.info("student3Model 业务上抛了个异常, 成功捕获, 所以student3Model上的事物回滚");
-                        }
-                        // student3Model 回滚
-                        StudentSingle3Model.Entity entity = student3Model.newQuery()
-                            .where("id", "1")
-                            .firstOrFail()
-                            .toObject();
-//                        Assert.assertNotEquals(entity.getName(), "dddddd");
-
-                        // student2Model 不受影响
-                        StudentSingle2Model.Entity id = student2Model.newQuery()
-                            .where("id", "4")
+                try {
+                    // 1层事物
+                    studentModel.newQuery().transaction(() -> {
+                        studentModel.newQuery().data("name", "testttt").where("id", "9").update();
+                        // 2层事物
+                        student2Model.newQuery().transaction(() -> {
+                            student2Model.newQuery().data("name", "testttt").where("id", "4").update();
+                            try {
+                                // 3层事物
+                                student3Model.newQuery().transaction(() -> {
+                                    student3Model.newQuery().where("id", "1").data("name", "dddddd").update();
+                                    StudentSingle3Model.Entity entity = student3Model.newQuery()
+                                        .where("id", "1")
+                                        .firstOrFail()
+                                        .toObject();
+                                    throw new RuntimeException("业务上抛了个异常");
+                                }, 1);
+                            } catch (RuntimeException e) {
+                                log.info("student3Model 业务上抛了个异常, 成功捕获, 所以student3Model上的事物回滚");
+                            }
+                            // student3Model 回滚
+                            StudentSingle3Model.Entity entity = student3Model.newQuery()
+                                .where("id", "1")
+                                .firstOrFail()
+                                .toObject();
+                            // student2Model 不受影响
+                            StudentSingle2Model.Entity id = student2Model.newQuery()
+                                .where("id", "4")
+                                .firstOrFail().toObject();
+                        }, 1);
+                        StudentSingleModel.Entity id = studentModel.newQuery()
+                            .where("id", "9")
                             .firstOrFail().toObject();
-//                        Assert.assertEquals(id.getName(), "testttt");
-
-                    }, 1);
-                    StudentSingleModel.Entity id = studentModel.newQuery()
-                        .where("id", "9")
-                        .firstOrFail().toObject();
-//                    Assert.assertEquals(id.getName(), "testttt");
-                }, 3);
-
-                countDownLatch.countDown();
-                System.out.println("子线程结束");
+                    }, 3);
+                }
+                finally {
+                    countDownLatch.countDown();
+                    System.out.println("子线程结束");
+                }
             }).start();
             System.out.println("开启线程: " + i);
         }
@@ -1166,14 +1163,14 @@ public class QueryBuilderTests extends DatabaseApplicationTests {
 
     @Test
     public void 事物_lock_in_share_mode() {
-        studentModel.newQuery().transaction(()->{
+        studentModel.newQuery().transaction(() -> {
             studentModel.newQuery().where("id", "3").sharedLock().get();
         }, 3);
     }
 
     @Test
     public void 事物_for_update() {
-        studentModel.newQuery().transaction(()->{
+        studentModel.newQuery().transaction(() -> {
             studentModel.newQuery().where("id", "3").lockForUpdate().get();
         }, 3);
     }

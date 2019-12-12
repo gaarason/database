@@ -1,5 +1,8 @@
 # database
 Eloquent ORM for Java
+
+**此项目已迁移至[database-all](https://github.com/gaarason/database-all),包含`database-spring-boot-starter`更方便集成**
+
 ## 目录
 * [注册bean](/document/bean.md)
 * [数据映射](/document/mapping.md)
